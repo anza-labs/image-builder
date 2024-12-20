@@ -16,6 +16,8 @@ jobs:
         with:
           go-version-file: ./go.mod
       - run: |
+          go install github.com/linuxkit/linuxkit/src/cmd/linuxkit@latest
+      - run: |
           make test
       - uses: codecov/codecov-action@v5
         with:
