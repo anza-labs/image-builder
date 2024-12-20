@@ -1,0 +1,23 @@
+# permissions for end users to view images.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: image-builder
+    app.kubernetes.io/managed-by: kustomize
+  name: image-viewer-role
+rules:
+- apiGroups:
+  - image-builder.anza-labs.dev
+  resources:
+  - images
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - image-builder.anza-labs.dev
+  resources:
+  - images/status
+  verbs:
+  - get

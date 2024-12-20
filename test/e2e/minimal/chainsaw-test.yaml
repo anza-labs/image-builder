@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: minimal
+  labels:
+    area: 'minimal'
+spec:
+  timeouts:
+    apply: 5s
+    assert: 30s
+    cleanup: 30s
+    delete: 15s
+    error: 30s
+  steps:
+    - name: Check if controller-manager exist
+      try:
+        - assert:
+            resource:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: image-builder-controller-manager
+                namespace: image-builder-system
+              status:
+                availableReplicas: 1
+        - assert:
+            resource:
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: s3-credentials
+                namespace: kube-system
+
+    - name: Create registry with all configuration options
+      try:
+        - create:
+            resource:
+              apiVersion: image-builder.anza-labs.dev/v1alpha1
+              kind: Image
+              metadata:
+                name: minimal
+              spec:
+                format: 'kernel+initrd'
+                configuration: |
+                  kernel:
+                    image: linuxkit/kernel:6.6.13
+                    cmdline: "console=tty0 console=ttyS0 console=ttyAMA0"
+                  init:
+                    - linuxkit/init:e120ea2a30d906bd1ee1874973d6e4b1403b5ca3
+                    - linuxkit/runc:6062483d748609d505f2bcde4e52ee64a3329f5f
+                    - linuxkit/containerd:39301e7312f13eedf19bd5d5551af7b37001d435
+                  onboot:
+                    - name: dhcpcd
+                      image: linuxkit/dhcpcd:e9e3580f2de00e73e7b316a007186d22fea056ee
+                      command: ["/sbin/dhcpcd", "--nobackground", "-f", "/dhcpcd.conf", "-1"]
+                  services:
+                    - name: getty
+                      image: linuxkit/getty:5d86a2ce2d890c14ab66b13638dcadf74f29218b
+                      env:
+                      - INSECURE=true
+                bucketCredentials:
+                  name: s3-credentials
+                  namespace: kube-system
+
+    - name: Wait for Registry status to be ready and resources to be deployed
+      try:
+        - assert:
+            timeout: 10m
+            resource:
+              apiVersion: image-builder.anza-labs.dev/v1alpha1
+              kind: Image
+              metadata:
+                name: minimal
+              status:
+                ready: true
