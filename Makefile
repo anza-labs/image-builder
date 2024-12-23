@@ -63,6 +63,10 @@ test: manifests generate ## Run tests.
 test-e2e: chainsaw ## Run the e2e tests against a k8s instance using Kyverno Chainsaw.
 	$(CHAINSAW) test ${CHAINSAW_ARGS}
 
+.PHONY: mc-play-test
+mc-play-test: mc
+	$(MC) mb --ignore-existing play/test
+
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter.
 	$(GOLANGCI_LINT) run
@@ -79,7 +83,6 @@ lint-manifests: kustomize kube-linter ## Run kube-linter on Kubernetes manifests
 .PHONY: hadolint
 hadolint: ## Run hadolint on Dockerfile
 	$(CONTAINER_TOOL) run --rm -i hadolint/hadolint < Dockerfile
-
 
 .PHONY: verify-licenses
 verify-licenses: addlicense ## Run addlicense to verify if files have license headers.
@@ -156,8 +159,6 @@ ifndef ignore-not-found
   ignore-not-found = false
 endif
 
-
-
 .PHONY: cluster
 cluster: kind ctlptl
 	@PATH=${LOCALBIN}:$(PATH) $(CTLPTL) apply -f hack/kind.yaml
@@ -195,6 +196,7 @@ KIND           ?= $(LOCALBIN)/kind
 KUBE_LINTER    ?= $(LOCALBIN)/kube-linter
 KUSTOMIZE      ?= $(LOCALBIN)/kustomize
 GOLANGCI_LINT  ?= $(LOCALBIN)/golangci-lint
+MC             ?= $(LOCALBIN)/mc
 
 ## Tool Versions
 ADDLICENSE_VERSION       ?= $(shell grep 'github.com/google/addlicense '       ./go.mod | cut -d ' ' -f 2)
@@ -206,6 +208,7 @@ GOLANGCI_LINT_VERSION    ?= $(shell grep 'github.com/golangci/golangci-lint '  .
 KIND_VERSION             ?= $(shell grep 'sigs.k8s.io/kind '                   ./go.mod | cut -d ' ' -f 2)
 KUBE_LINTER_VERSION      ?= $(shell grep 'golang.stackrox.io/kube-linter '     ./go.mod | cut -d ' ' -f 2)
 KUSTOMIZE_VERSION        ?= $(shell grep 'sigs.k8s.io/kustomize/kustomize/v5 ' ./go.mod | cut -d ' ' -f 2)
+MC_VERSION               ?= latest
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)$(ADDLICENSE_VERSION) ## Download addlicense locally if necessary.
@@ -251,6 +254,11 @@ $(KUBE_LINTER)$(KUBE_LINTER_VERSION): $(LOCALBIN)
 kustomize: $(KUSTOMIZE)$(KUSTOMIZE_VERSION) ## Download kustomize locally if necessary.
 $(KUSTOMIZE)$(KUSTOMIZE_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5,$(KUSTOMIZE_VERSION))
+
+.PHONY: mc
+mc: $(MC)$(MC_VERSION) ## Download kustomize locally if necessary.
+$(MC)$(MC_VERSION): $(LOCALBIN)
+	$(call go-install-tool,$(MC),github.com/minio/mc,$(MC_VERSION))
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary

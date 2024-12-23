@@ -6,6 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/go-logr/logr v1.4.2
 	github.com/minio/minio-go/v7 v7.0.82
 	github.com/stretchr/testify v1.10.0
 	k8s.io/api v0.31.3
@@ -138,7 +139,6 @@ require (
 	github.com/go-critic/go-critic v0.11.5 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
-	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect

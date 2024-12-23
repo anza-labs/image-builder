@@ -31,6 +31,11 @@ spec:
               metadata:
                 name: s3-credentials
                 namespace: kube-system
+        - script:
+            content: |
+              make --directory=../../../ mc-play-test
+            check:
+              ($error != null): false
 
     - name: Create registry with all configuration options
       try:

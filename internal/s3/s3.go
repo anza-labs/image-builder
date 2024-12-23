@@ -24,8 +24,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type Client struct {
@@ -102,8 +104,42 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 	return c.s3cli.RemoveObject(ctx, c.bucketName, key, minio.RemoveObjectOptions{})
 }
 
+type progressReader struct {
+	log         logr.Logger
+	underlying  io.Reader
+	totalSize   int64
+	currentSize int64
+}
+
+func (r *progressReader) Read(p []byte) (int, error) {
+	n, err := r.underlying.Read(p)
+	if err != nil {
+		r.log.V(5).Error(err, "Underlying read errored",
+			"size.current", r.currentSize+int64(n))
+		return n, err
+	}
+
+	r.currentSize += int64(n)
+
+	var percentage int64
+	if r.totalSize > 0 {
+		percentage = r.currentSize * 100 / r.totalSize
+	}
+
+	r.log.V(5).Info("Read successfull, progressing",
+		"size.current", r.currentSize,
+		"size.percentage", percentage)
+	return n, err
+}
+
 func (c *Client) Put(ctx context.Context, key string, data io.Reader, size int64) error {
-	_, err := c.s3cli.PutObject(ctx, c.bucketName, key, data, size, minio.PutObjectOptions{})
+	r := &progressReader{
+		underlying: data,
+		totalSize:  size,
+		log:        log.FromContext(ctx, "size.total", size).WithName("progressReader"),
+	}
+
+	_, err := c.s3cli.PutObject(ctx, c.bucketName, key, r, size, minio.PutObjectOptions{})
 
 	return err
 }

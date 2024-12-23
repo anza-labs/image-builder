@@ -113,7 +113,6 @@ func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 }
 
 func (r *ImageReconciler) createClient(ctx context.Context, image *anzalabsdevv1alpha1.Image) (*s3.Client, error) {
-	// Fetch the secret from image.Spec.BucketCredentials
 	credentials := image.Spec.BucketCredentials
 	if credentials.Name == "" {
 		return nil, errors.New("bucket credentials are missing")
@@ -160,6 +159,8 @@ func (r *ImageReconciler) deleteExternalResources(ctx context.Context, image *an
 	}
 
 	for objectKey := range image.Status.Objects {
+		log.V(3).Info("Removing object", "object.key", objectKey)
+
 		ok, err := s3cli.Stat(ctx, objectKey)
 		if err != nil {
 			return fmt.Errorf("failed to stat object: %w", err)
