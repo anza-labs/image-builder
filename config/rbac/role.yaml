@@ -7,11 +7,32 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
   - secrets
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps/finalizers
+  - secrets/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - configmaps/status
+  - secrets/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - batch
   resources:

@@ -30,21 +30,30 @@ type ImageSpec struct {
 	// +required
 	Configuration string `json:"configuration"`
 
+	// Result is a local reference that lists downloadable objects, that are results of the image building.
+	// Defaults to the Image.Metadata.Name.
+	// +optional
+	Result corev1.LocalObjectReference `json:"result"`
+
 	// BucketCredentials is a reference to the credentials for S3, where the image will be stored.
 	// +required
-	BucketCredentials corev1.SecretReference `json:"bucketCredentials"`
+	BucketCredentials corev1.LocalObjectReference `json:"bucketCredentials"`
 
 	BuilderTemplate BuilderTemplate `json:"builderTemplate"`
 }
 
 type BuilderTemplate struct {
+	// ServiceAccountName is the name of the ServiceAccount to use to run the Job.
+	// +optional
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
 	// Image indicates the container image to use for the Registry.
 	// +optional
 	Image string `json:"image,omitempty"`
 
 	// Resources describe the compute resource requirements.
 	// +optional
-	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	// Affinity specifies the scheduling constraints for Pods.
 	// +optional
@@ -56,23 +65,18 @@ type ImageStatus struct {
 	// Ready indicates whether the image is ready.
 	// +optional
 	Ready bool `json:"ready"`
-
-	// Objects is a list of downloadable objects, that are results of the image building
-	Objects map[string]string `json:"objects"`
-
-	// Conditions lists the conditions of the image resource.
-	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready"
 
 // Image is the Schema for the images API.
 type Image struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Spec is immutable"
 	Spec   ImageSpec   `json:"spec,omitempty"`
 	Status ImageStatus `json:"status,omitempty"`
 }

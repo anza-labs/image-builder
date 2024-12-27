@@ -28,3 +28,11 @@ func Key(image *anzalabsdevv1alpha1.Image, key string) string {
 		DNSName(key),
 	))
 }
+
+func Container() string {
+	return "image-builder"
+}
+
+func ConfigMap(base, hash string) string {
+	return DNSName(Truncate("%s-%s", 63, base, hash))
+}
