@@ -33,6 +33,22 @@ type ImageSpec struct {
 	// BucketCredentials is a reference to the credentials for S3, where the image will be stored.
 	// +required
 	BucketCredentials corev1.SecretReference `json:"bucketCredentials"`
+
+	BuilderTemplate BuilderTemplate `json:"builderTemplate"`
+}
+
+type BuilderTemplate struct {
+	// Image indicates the container image to use for the Registry.
+	// +optional
+	Image string `json:"image,omitempty"`
+
+	// Resources describe the compute resource requirements.
+	// +optional
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Affinity specifies the scheduling constraints for Pods.
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 }
 
 // ImageStatus defines the observed state of Image.
