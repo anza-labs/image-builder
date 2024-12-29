@@ -21,6 +21,18 @@ import (
 
 // ImageSpec defines the desired state of Image.
 type ImageSpec struct {
+	// BuilderImage indicates the container image to use for the Builder job.
+	// +optional
+	BuilderImage string `json:"builderImage,omitempty"`
+
+	// Resources describe the compute resource requirements.
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Affinity specifies the scheduling constraints for Pods.
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
 	// Format specifies the image format.
 	// +kubebuilder:validation:Enum=aws;docker;dynamic-vhd;gcp;iso-bios;iso-efi;iso-efi-initrd;kernel+initrd;kernel+iso;kernel+squashfs;qcow2-bios;qcow2-efi;raw-bios;raw-efi;rpi3;tar;tar-kernel-initrd;vhd;vmdk
 	// +required
@@ -38,26 +50,6 @@ type ImageSpec struct {
 	// BucketCredentials is a reference to the credentials for S3, where the image will be stored.
 	// +required
 	BucketCredentials corev1.LocalObjectReference `json:"bucketCredentials"`
-
-	BuilderTemplate BuilderTemplate `json:"builderTemplate"`
-}
-
-type BuilderTemplate struct {
-	// ServiceAccountName is the name of the ServiceAccount to use to run the Job.
-	// +optional
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-
-	// Image indicates the container image to use for the Registry.
-	// +optional
-	Image string `json:"image,omitempty"`
-
-	// Resources describe the compute resource requirements.
-	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-
-	// Affinity specifies the scheduling constraints for Pods.
-	// +optional
-	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 }
 
 // ImageStatus defines the observed state of Image.
@@ -76,7 +68,6 @@ type Image struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Spec is immutable"
 	Spec   ImageSpec   `json:"spec,omitempty"`
 	Status ImageStatus `json:"status,omitempty"`
 }

@@ -33,10 +33,10 @@ func TestTruncate(t *testing.T) {
 		max      int
 	}{
 		{
-			format:   "%s-registry",
+			format:   "%s-object",
 			max:      63,
 			values:   []interface{}{"simplest"},
-			expected: "simplest-registry",
+			expected: "simplest-object",
 			cap:      "the standard case",
 		},
 		{
@@ -47,31 +47,31 @@ func TestTruncate(t *testing.T) {
 			cap:      "first N case",
 		},
 		{
-			format:   "%s-registry",
+			format:   "%s-object",
 			max:      63,
 			values:   []interface{}{"d0c1e62-4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-11ea-b174-c85b7644b6b5"},
-			expected: "d0c1e62-4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-11ea-registry",
+			expected: "d0c1e62-4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-11ea-object",
 			cap:      "instance + fixed within bounds",
 		},
 		{
-			format:   "%s-%s-registry",
+			format:   "%s-%s-object",
 			max:      63,
 			values:   []interface{}{"d0c1e62", "4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-11ea-b174-c85b7644b6b5"},
-			expected: "4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-11ea-b174-c-registry",
+			expected: "4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-11ea-b174-c-object",
 			cap:      "first value gets dropped, second truncated",
 		},
 		{
-			format:   "%s-%s-registry",
+			format:   "%s-%s-object",
 			max:      63,
 			values:   []interface{}{"4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-11ea-b174-c85b7644b6b5", "d0c1e62"},
-			expected: "4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-11ea-d0c1e62-registry",
+			expected: "4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-11ea-d0c1e62-object",
 			cap:      "first value gets truncated, second added",
 		},
 		{
-			format:   "%d-%s-registry",
+			format:   "%d-%s-object",
 			max:      63,
 			values:   []interface{}{42, "d0c1e62-4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-11ea-b174-c85b7644b6b5"},
-			expected: "42-d0c1e62-4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-1-registry",
+			expected: "42-d0c1e62-4d96-11ea-b174-c85b7644b6b5-5d0c1e62-4d96-1-object",
 			cap:      "first value gets passed, second truncated",
 		},
 	} {

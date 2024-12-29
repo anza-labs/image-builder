@@ -32,10 +32,9 @@ jobs:
           go-version-file: ./go.mod
       - run: |
           make \
-            IMG=localhost:5005/registry-operator:e2e \
-              cluster \
-              docker-build docker-push \
-              deploy
+            cluster \
+            docker-build docker-push \
+            deploy
       - run: |
           make \
             test-e2e

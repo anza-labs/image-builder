@@ -22,12 +22,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	_ "embed"
 )
 
-//go:embed test/simple.yaml
-var simple string
+var simple = "test/simple.yaml"
 
 func TestBuild(t *testing.T) {
 	b, err := New()

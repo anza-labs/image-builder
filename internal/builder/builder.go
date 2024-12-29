@@ -35,13 +35,6 @@ type Output struct {
 }
 
 func New() (*Builder, error) {
-	linuxkit, found := os.LookupEnv("LINUXKIT")
-	if found {
-		return &Builder{
-			linuxkit: linuxkit,
-		}, nil
-	}
-
 	linuxkit, err := exec.LookPath("linuxkit")
 	if err != nil {
 		if !errors.Is(err, exec.ErrNotFound) {
@@ -70,7 +63,7 @@ func FilePathWalkDir(root string) ([]Output, error) {
 	return files, err
 }
 
-func (b *Builder) Build(ctx context.Context, format string, config string) ([]Output, error) {
+func (b *Builder) Build(ctx context.Context, format string, configPath string) ([]Output, error) {
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, fmt.Errorf("unable to prepare output dir: %w", err)
@@ -82,11 +75,9 @@ func (b *Builder) Build(ctx context.Context, format string, config string) ([]Ou
 		"build",
 		"--format", format,
 		"--dir", dir,
-		"/dev/stdin",
+		configPath,
 	)
 
-	stdin := bytes.NewReader([]byte(config))
-	cmd.Stdin = stdin
 	stdout := new(bytes.Buffer)
 	stderr := new(bytes.Buffer)
 	cmd.Stdout = stdout

@@ -14,25 +14,6 @@ Package v1alpha1 contains API Schema definitions for the  v1alpha1 API group
 
 
 
-#### BuilderTemplate
-
-
-
-
-
-
-
-_Appears in:_
-- [ImageSpec](#imagespec)
-
-| Field | Description | Default | Validation |
-| --- | --- | --- | --- |
-| `serviceAccountName` _string_ | ServiceAccountName is the name of the ServiceAccount to use to run the Job. |  |  |
-| `image` _string_ | Image indicates the container image to use for the Registry. |  |  |
-| `resources` _[ResourceRequirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#resourcerequirements-v1-core)_ | Resources describe the compute resource requirements. |  |  |
-| `affinity` _[Affinity](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#affinity-v1-core)_ | Affinity specifies the scheduling constraints for Pods. |  |  |
-
-
 #### Image
 
 
@@ -88,11 +69,13 @@ _Appears in:_
 
 | Field | Description | Default | Validation |
 | --- | --- | --- | --- |
+| `builderImage` _string_ | BuilderImage indicates the container image to use for the Builder job. |  |  |
+| `resources` _[ResourceRequirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#resourcerequirements-v1-core)_ | Resources describe the compute resource requirements. |  |  |
+| `affinity` _[Affinity](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#affinity-v1-core)_ | Affinity specifies the scheduling constraints for Pods. |  |  |
 | `format` _string_ | Format specifies the image format. |  | Enum: [aws docker dynamic-vhd gcp iso-bios iso-efi iso-efi-initrd kernel+initrd kernel+iso kernel+squashfs qcow2-bios qcow2-efi raw-bios raw-efi rpi3 tar tar-kernel-initrd vhd vmdk] <br /> |
 | `configuration` _string_ | Configuration is a YAML formatted Linuxkit config. |  |  |
 | `result` _[LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#localobjectreference-v1-core)_ | Result is a local reference that lists downloadable objects, that are results of the image building.<br />Defaults to the Image.Metadata.Name. |  |  |
 | `bucketCredentials` _[LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#localobjectreference-v1-core)_ | BucketCredentials is a reference to the credentials for S3, where the image will be stored. |  |  |
-| `builderTemplate` _[BuilderTemplate](#buildertemplate)_ |  |  |  |
 
 
 #### ImageStatus

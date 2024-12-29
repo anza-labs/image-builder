@@ -17,16 +17,75 @@ package controller
 import (
 	"crypto/sha256"
 	"fmt"
-	"os"
 
 	anzalabsdevv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
 	"github.com/anza-labs/image-builder/internal/naming"
+
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 )
 
-var serviceAccountName = os.Getenv("K8S_SERVICE_ACCOUNT")
+func Role(image *anzalabsdevv1alpha1.Image) *rbacv1.Role {
+	return &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      image.Name,
+			Namespace: image.Namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       image.Name,
+				"app.kubernetes.io/managed-by": "image-builder",
+			},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{""},
+				Resources: []string{"secrets"},
+				Verbs:     []string{"create", "delete", "get", "list", "patch", "update", "watch"},
+			},
+		},
+	}
+}
+
+func RoleBinding(image *anzalabsdevv1alpha1.Image) *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      image.Name,
+			Namespace: image.Namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       image.Name,
+				"app.kubernetes.io/managed-by": "image-builder",
+			},
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      image.Name,
+				Namespace: image.Namespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     image.Name,
+		},
+	}
+}
+
+func ServiceAccount(image *anzalabsdevv1alpha1.Image) *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      image.Name,
+			Namespace: image.Namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       image.Name,
+				"app.kubernetes.io/managed-by": "image-builder",
+			},
+		},
+		AutomountServiceAccountToken: ptr.To(true),
+	}
+}
 
 func ConfigMap(image *anzalabsdevv1alpha1.Image) *corev1.ConfigMap {
 	config := image.Spec.Configuration
@@ -42,30 +101,33 @@ func ConfigMap(image *anzalabsdevv1alpha1.Image) *corev1.ConfigMap {
 			},
 		},
 		Data: map[string]string{
-			"config": config,
+			"image.yaml": config,
 		},
 	}
 }
 
-func Job(image *anzalabsdevv1alpha1.Image) *batchv1.Job {
+func Job(image *anzalabsdevv1alpha1.Image, version string) *batchv1.Job {
 	outputSecret := image.Spec.Result
 	bucketCredentials := image.Spec.BucketCredentials
 	format := image.Spec.Format
-	containerImage := image.Spec.BuilderTemplate.Image
-	affinity := image.Spec.BuilderTemplate.Affinity
-	resources := image.Spec.BuilderTemplate.Resources
-	serviceAccount := image.Spec.BuilderTemplate.ServiceAccountName
+	containerImage := image.Spec.BuilderImage
+	affinity := image.Spec.Affinity
+	resources := image.Spec.Resources
 
 	config := image.Spec.Configuration
 	h := fmt.Sprintf("%x", sha256.Sum256([]byte(config)))
 
-	if serviceAccount == "" {
-		serviceAccount = serviceAccountName
+	if outputSecret.Name == "" {
+		outputSecret.Name = image.Name
+	}
+
+	if containerImage == "" {
+		containerImage = fmt.Sprintf("ghcr.io/anza-labs/image-builder:%s", version)
 	}
 
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-job", image.Name),
+			Name:      image.Name,
 			Namespace: image.Namespace,
 			Labels: map[string]string{
 				"app.kubernetes.io/name":       image.Name,
@@ -80,12 +142,21 @@ func Job(image *anzalabsdevv1alpha1.Image) *batchv1.Job {
 							Name:  "builder",
 							Image: containerImage,
 							Env: []corev1.EnvVar{
-								{Name: "OUTPUT", Value: outputSecret.Name},
+								{Name: "K8S_NAME", ValueFrom: &corev1.EnvVarSource{
+									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
+								}},
+								{Name: "K8S_NAMESPACE", ValueFrom: &corev1.EnvVarSource{
+									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"},
+								}},
+								{Name: "K8S_SECRET_NAME", Value: outputSecret.Name},
 								{Name: "LINUXKIT_FORMAT", Value: format},
+								{Name: "LINUXKIT_CONFIG", Value: "/config/image.yaml"},
+								{Name: "STORAGE_CREDENTIALS", Value: "/credentials/BucketInfo.json"},
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{Name: "bucket-credentials", MountPath: "/credentials"},
 								{Name: "config", MountPath: "/config"},
+								{Name: "temp", MountPath: "/tmp"},
 							},
 							Resources: resources,
 						},
@@ -109,9 +180,15 @@ func Job(image *anzalabsdevv1alpha1.Image) *batchv1.Job {
 								},
 							},
 						},
+						{
+							Name: "temp",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{Medium: ""},
+							},
+						},
 					},
 					Affinity:           affinity,
-					ServiceAccountName: serviceAccount,
+					ServiceAccountName: image.Name,
 					RestartPolicy:      corev1.RestartPolicyNever,
 				},
 			},

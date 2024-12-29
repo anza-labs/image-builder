@@ -56,11 +56,6 @@ spec:
           - --leader-elect
           - --health-probe-bind-address=:8081
         image: controller:latest
-        env:
-        - name: K8S_SERVICE_ACCOUNT
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.serviceAccountName
         name: manager
         securityContext:
           allowPrivilegeEscalation: false

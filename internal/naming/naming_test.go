@@ -16,10 +16,6 @@ package naming
 
 import (
 	"testing"
-
-	"github.com/anza-labs/image-builder/api/v1alpha1"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestKey(t *testing.T) {
@@ -52,16 +48,7 @@ func TestKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			image := &v1alpha1.Image{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-image",
-					Namespace: "test-namespace",
-				},
-				Spec: v1alpha1.ImageSpec{
-					Format: tt.format,
-				},
-			}
-			output := Key(image, "stdin")
+			output := Key("test-namespace", "test-image", tt.format, "stdin")
 			if output != tt.expectedOutput {
 				t.Errorf("expected %s, got %s", tt.expectedOutput, output)
 			}

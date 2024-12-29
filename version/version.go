@@ -12,25 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package naming
+package version
 
-import (
-	"path"
-)
-
-func Key(namespace, name, format, key string) string {
-	return path.Clean(path.Join(
-		DNSName(namespace),
-		DNSName(name),
-		DNSName(format),
-		DNSName(key),
-	))
-}
-
-func Container() string {
-	return "image-builder"
-}
-
-func ConfigMap(base, hash string) string {
-	return DNSName(Truncate("%s-%s", 63, base, hash))
-}
+var Version string

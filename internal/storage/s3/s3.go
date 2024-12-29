@@ -16,17 +16,15 @@ package s3
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"slices"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -36,19 +34,6 @@ type Client struct {
 	expiry     time.Duration
 }
 
-var ErrInvalidConfig = errors.New("invalid configuration")
-
-type Config struct {
-	Spec Spec `json:"spec"`
-}
-
-type Spec struct {
-	BucketName         string    `json:"bucketName"`
-	AuthenticationType string    `json:"authenticationType"`
-	Protocols          []string  `json:"protocols"`
-	SecretS3           *SecretS3 `json:"secretS3,omitempty"`
-}
-
 type SecretS3 struct {
 	Endpoint        string `json:"endpoint"`
 	Region          string `json:"region"`
@@ -56,20 +41,7 @@ type SecretS3 struct {
 	AccessSecretKey string `json:"accessSecretKey"`
 }
 
-func New(config Config, ssl bool) (*Client, error) {
-	if !slices.ContainsFunc(config.Spec.Protocols, func(s string) bool { return strings.EqualFold(s, "s3") }) {
-		return nil, fmt.Errorf("%w: invalid protocol", ErrInvalidConfig)
-	}
-
-	if !strings.EqualFold(config.Spec.AuthenticationType, "key") {
-		return nil, fmt.Errorf("%w: invalid authentication type", ErrInvalidConfig)
-	}
-
-	s3secret := config.Spec.SecretS3
-	if s3secret == nil {
-		return nil, fmt.Errorf("%w: s3 secret missing", ErrInvalidConfig)
-	}
-
+func New(bucketName string, s3secret SecretS3, ssl bool) (*Client, error) {
 	s3cli, err := minio.New(s3secret.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(s3secret.AccessKeyID, s3secret.AccessSecretKey, ""),
 		Region: s3secret.Region,
@@ -81,7 +53,7 @@ func New(config Config, ssl bool) (*Client, error) {
 
 	return &Client{
 		s3cli:      s3cli,
-		bucketName: config.Spec.BucketName,
+		bucketName: bucketName,
 		expiry:     time.Hour * 24 * 5,
 	}, nil
 }
@@ -126,7 +98,7 @@ func (r *progressReader) Read(p []byte) (int, error) {
 		percentage = r.currentSize * 100 / r.totalSize
 	}
 
-	r.log.V(5).Info("Read successfull, progressing",
+	r.log.V(5).Info("Read successful, progressing",
 		"size.current", r.currentSize,
 		"size.percentage", percentage)
 	return n, err
