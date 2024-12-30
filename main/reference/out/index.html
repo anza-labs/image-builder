@@ -668,7 +668,19 @@
 <td></td>
 </tr>
 <tr>
-<td><code>metadata</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#objectmeta-v1-meta">ObjectMeta</a></em></td>
+<td><code>kind</code> <em>string</em></td>
+<td>Kind is a string value representing the REST resource this object represents.<br />Servers may infer this from the endpoint the client submits requests to.<br />Cannot be updated.<br />In CamelCase.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>apiVersion</code> <em>string</em></td>
+<td>APIVersion defines the versioned schema of this representation of an object.<br />Servers should convert recognized schemas to the latest internal value, and<br />may reject unrecognized values.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>metadata</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#objectmeta-v1-meta">ObjectMeta</a></em></td>
 <td>Refer to Kubernetes API documentation for fields of <code>metadata</code>.</td>
 <td></td>
 <td></td>
@@ -712,7 +724,19 @@
 <td></td>
 </tr>
 <tr>
-<td><code>metadata</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#listmeta-v1-meta">ListMeta</a></em></td>
+<td><code>kind</code> <em>string</em></td>
+<td>Kind is a string value representing the REST resource this object represents.<br />Servers may infer this from the endpoint the client submits requests to.<br />Cannot be updated.<br />In CamelCase.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>apiVersion</code> <em>string</em></td>
+<td>APIVersion defines the versioned schema of this representation of an object.<br />Servers should convert recognized schemas to the latest internal value, and<br />may reject unrecognized values.<br />More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>metadata</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#listmeta-v1-meta">ListMeta</a></em></td>
 <td>Refer to Kubernetes API documentation for fields of <code>metadata</code>.</td>
 <td></td>
 <td></td>
@@ -740,6 +764,24 @@
 </thead>
 <tbody>
 <tr>
+<td><code>builderImage</code> <em>string</em></td>
+<td>BuilderImage indicates the container image to use for the Builder job.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>resources</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#resourcerequirements-v1-core">ResourceRequirements</a></em></td>
+<td>Resources describe the compute resource requirements.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>affinity</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#affinity-v1-core">Affinity</a></em></td>
+<td>Affinity specifies the scheduling constraints for Pods.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
 <td><code>format</code> <em>string</em></td>
 <td>Format specifies the image format.</td>
 <td></td>
@@ -752,7 +794,13 @@
 <td></td>
 </tr>
 <tr>
-<td><code>bucketCredentials</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#localobjectreference-v1-core">LocalObjectReference</a></em></td>
+<td><code>result</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#localobjectreference-v1-core">LocalObjectReference</a></em></td>
+<td>Result is a local reference that lists downloadable objects, that are results of the image building.<br />Defaults to the Image.Metadata.Name.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>bucketCredentials</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#localobjectreference-v1-core">LocalObjectReference</a></em></td>
 <td>BucketCredentials is a reference to the credentials for S3, where the image will be stored.</td>
 <td></td>
 <td></td>
@@ -776,18 +824,6 @@
 <tr>
 <td><code>ready</code> <em>boolean</em></td>
 <td>Ready indicates whether the image is ready.</td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td><code>downloadURL</code> <em>string</em></td>
-<td>DownloadURL specifies the URL to download the image.</td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td><code>conditions</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#condition-v1-meta">Condition</a> array</em></td>
-<td>Conditions lists the conditions of the image resource.</td>
 <td></td>
 <td></td>
 </tr>
