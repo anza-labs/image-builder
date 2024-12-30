@@ -1,0 +1,10 @@
+images:
+- name: controller
+  newName: ghcr.io/anza-labs/image-builder
+  newTag: v0.2.0
+namePrefix: image-builder-
+namespace: image-builder-system
+resources:
+- ./config/crd
+- ./config/manager
+- ./config/rbac
