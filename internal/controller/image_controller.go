@@ -16,9 +16,9 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	anzalabsdevv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
-	"github.com/anza-labs/image-builder/version"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -43,6 +43,7 @@ type ImageReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+//nolint:lll // kubebuilder directives can exceed length limit
 // +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=images,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=images/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=images/finalizers,verbs=update
@@ -68,7 +69,7 @@ type ImageReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx, "image", klog.KRef(req.Namespace, req.Name))
+	log := log.FromContext(ctx)
 
 	log.V(3).Info("Fetching Image object")
 	image := &anzalabsdevv1alpha1.Image{}
@@ -104,7 +105,7 @@ func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, nil
 	}
 
-	job := Job(image, version.Version)
+	job := Job(image)
 	if err := r.ensureResources(ctx, image,
 		ServiceAccount(image),
 		Role(image),
@@ -158,8 +159,8 @@ func (r *ImageReconciler) ensureResources(ctx context.Context, owner client.Obje
 
 // cleanupResources removes resources owned by the Image.
 func (r *ImageReconciler) cleanupResources(ctx context.Context, image *anzalabsdevv1alpha1.Image) error {
-	log := log.FromContext(ctx)
-	log.V(3).Info("Cleaning up resources", "image", klog.KRef(image.Namespace, image.Name))
+	log := log.FromContext(ctx, "image", klog.KRef(image.Namespace, image.Name))
+	log.V(3).Info("Cleaning up resources")
 
 	// Define a list of owned resources to delete
 	resourceTypes := []client.ObjectList{
@@ -171,27 +172,30 @@ func (r *ImageReconciler) cleanupResources(ctx context.Context, image *anzalabsd
 		&rbacv1.RoleBindingList{},
 	}
 
+	ownerUID := image.GetUID()
 	for _, resourceType := range resourceTypes {
 		list := resourceType.DeepCopyObject().(client.ObjectList)
-		err := r.List(ctx, list, client.InNamespace(image.Namespace), client.MatchingFields{
-			"metadata.ownerReferences": string(image.UID),
-		})
+		err := r.List(ctx, list, client.InNamespace(image.Namespace))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to list objects: %w", err)
 		}
 
 		// Iterate over resources and delete them
 		items, err := meta.ExtractList(list)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to extract list: %w", err)
 		}
 		for _, item := range items {
 			resource := item.(client.Object)
-			log.V(3).Info("Deleting resource",
-				"name", resource.GetName(),
-				"kind", resource.GetObjectKind().GroupVersionKind().Kind)
-			if err := r.Delete(ctx, resource); err != nil {
-				return err
+			for _, ref := range resource.GetOwnerReferences() {
+				if ref.UID == ownerUID {
+					log.V(3).Info("Deleting resource",
+						"name", resource.GetName(),
+						"kind", resource.GetObjectKind().GroupVersionKind().Kind)
+					if err := r.Delete(ctx, resource); err != nil {
+						return fmt.Errorf("failed to delete resource: %w", err)
+					}
+				}
 			}
 		}
 	}

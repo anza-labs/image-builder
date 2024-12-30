@@ -41,7 +41,6 @@ spec:
               metadata:
                 name: minimal
               spec:
-                builderImage: "localhost:5005/image-builder:dev"
                 format: 'kernel+initrd'
                 configuration: |
                   kernel:

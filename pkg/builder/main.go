@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 
-	anzalabsdevv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
 	"github.com/anza-labs/image-builder/internal/builder"
 	"github.com/anza-labs/image-builder/internal/naming"
 	"github.com/anza-labs/image-builder/internal/storage"
@@ -36,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -44,61 +44,59 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme = runtime.NewScheme()
 )
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
-	utilruntime.Must(anzalabsdevv1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
 type options struct {
-	format             string
-	configPath         string
-	outputName         string
-	storageCredentials string
-	k8sNamespace       string
-	k8sName            string
+	Format             string
+	ConfigPath         string
+	OutputName         string
+	StorageCredentials string
+	K8sNamespace       string
+	K8sName            string
 }
 
 func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
-
 	ctrl.SetLogger(klog.NewKlogr())
 
 	if err := run(signals.SetupSignalHandler(), options{
-		format:             os.Getenv("LINUXKIT_FORMAT"),
-		configPath:         os.Getenv("LINUXKIT_CONFIG"),
-		storageCredentials: os.Getenv("STORAGE_CREDENTIALS"),
-		outputName:         os.Getenv("K8S_SECRET_NAME"),
-		k8sNamespace:       os.Getenv("K8S_NAMESPACE"),
-		k8sName:            os.Getenv("K8S_NAME"),
+		Format:             os.Getenv("LINUXKIT_FORMAT"),
+		ConfigPath:         os.Getenv("LINUXKIT_CONFIG"),
+		StorageCredentials: os.Getenv("STORAGE_CREDENTIALS"),
+		OutputName:         os.Getenv("K8S_SECRET_NAME"),
+		K8sNamespace:       os.Getenv("K8S_NAMESPACE"),
+		K8sName:            os.Getenv("K8S_NAME"),
 	}); err != nil {
-		setupLog.V(0).Error(err, "Critical error while running")
+		klog.V(0).ErrorS(err, "Critical error while running")
 	}
 }
 
 func run(ctx context.Context, opts options) error {
-	setupLog.V(1).Info("Starting run", "options", opts)
+	log := log.FromContext(ctx)
 
-	setupLog.V(1).Info("Opening storage credentials file", "path", opts.storageCredentials)
-	f, err := os.Open(opts.storageCredentials)
+	log.V(1).Info("Starting run", "options", opts)
+
+	log.V(1).Info("Opening storage credentials file", "path", opts.StorageCredentials)
+	f, err := os.Open(opts.StorageCredentials)
 	if err != nil {
 		return fmt.Errorf("failed to open BucketInfo.json: %w", err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck // best effort call
 
 	var cfg storage.Config
-	setupLog.V(1).Info("Decoding storage credentials")
+	log.V(1).Info("Decoding storage credentials")
 	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
 		return fmt.Errorf("failed to decode bucket credentials: %w", err)
 	}
 
-	setupLog.V(1).Info("Creating Kubernetes client")
+	log.V(1).Info("Creating Kubernetes client")
 	cli, err := client.New(config.GetConfigOrDie(), client.Options{
 		Scheme: scheme,
 	})
@@ -106,69 +104,66 @@ func run(ctx context.Context, opts options) error {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
 	}
 
-	setupLog.V(1).Info("Initializing storage")
+	log.V(1).Info("Initializing storage")
 	stor, err := storage.New(cfg, true)
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
 
-	setupLog.V(1).Info("Initializing builder")
+	log.V(1).Info("Initializing builder")
 	bld, err := builder.New()
 	if err != nil {
 		return fmt.Errorf("failed to initialize builder: %w", err)
 	}
 
-	setupLog.V(1).Info("Building images", "format", opts.format, "configPath", opts.configPath)
-	out, err := bld.Build(ctx, opts.format, opts.configPath)
+	log.V(1).Info("Building images", "format", opts.Format, "configPath", opts.ConfigPath)
+	out, err := bld.Build(ctx, opts.Format, opts.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to build images: %w", err)
 	}
 
 	outputs := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: opts.k8sNamespace,
-			Name:      opts.outputName,
+			Namespace: opts.K8sNamespace,
+			Name:      opts.OutputName,
 		},
-		StringData: make(map[string]string),
+		StringData: map[string]string{},
+		Data:       map[string][]byte{},
 	}
-	owner := &anzalabsdevv1alpha1.Image{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: opts.k8sNamespace,
-			Name:      opts.k8sName,
-		},
-	}
-
 	for _, o := range out {
-		setupLog.V(1).Info("Processing output file", "path", o.Path)
+		log.V(1).Info("Processing output file", "path", o.Path)
 		f, err := os.Open(o.Path)
 		if err != nil {
 			return fmt.Errorf("failed to open file at path %s: %w", o.Path, err)
 		}
-		defer f.Close()
+		defer f.Close() //nolint:errcheck // best effort call
 
-		objectKey := naming.Key(opts.k8sNamespace, opts.k8sName, opts.format, o.Name)
-		setupLog.V(1).Info("Uploading image to storage", "key", objectKey)
+		objectKey := naming.Key(opts.K8sNamespace, opts.K8sName, opts.Format, o.Name)
+		log.V(1).Info("Uploading image to storage", "key", objectKey)
 		if err := stor.Put(ctx, objectKey, f, o.Size); err != nil {
 			return fmt.Errorf("failed to upload image to storage with key %s: %w", objectKey, err)
 		}
 
-		setupLog.V(1).Info("Generating URL for object", "key", objectKey)
+		log.V(1).Info("Generating URL for object", "key", objectKey)
 		url, err := stor.GetURL(ctx, objectKey)
 		if err != nil {
 			return fmt.Errorf("failed to generate URL for object key %s: %w", objectKey, err)
 		}
 
-		outputs.StringData[objectKey] = url
+		if outputs.StringData == nil {
+			log.V(3).Info("StringData map was empty, initializing")
+			outputs.StringData = map[string]string{}
+		}
+		log.V(4).Info("New data added to secret", "key", objectKey, "value", url)
+		outputs.StringData[naming.DNSName(o.Name)] = fmt.Sprintf("%s = %s", objectKey, url)
 
-		setupLog.V(1).Info("Creating or updating Kubernetes secret", "name", opts.outputName)
-		_, err = controllerutil.CreateOrUpdate(ctx, cli, outputs, func() error {
-			return ctrl.SetControllerReference(owner, outputs, scheme)
-		})
+		log.V(1).Info("Creating or updating Kubernetes secret", "secret", klog.KObj(outputs))
+		_, err = controllerutil.CreateOrUpdate(ctx, cli, outputs, func() error { return nil })
 		if err != nil {
 			return fmt.Errorf("failed to create or update Kubernetes secret: %w", err)
 		}
 	}
 
-	setupLog.V(1).Info("Run completed successfully")
+	log.V(1).Info("Run completed successfully")
 	return nil
 }

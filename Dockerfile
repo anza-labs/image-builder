@@ -8,6 +8,7 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETPLATFORM
 ARG VERSION="dev"
+ARG OCI_REPOSITORY="ghcr.io/anza-labs"
 COPY --from=xx / /
 
 WORKDIR /workspace
@@ -28,7 +29,9 @@ COPY internal/ internal/
 
 # Build
 ENV CGO_ENABLED=0
-RUN xx-go build -trimpath -a -o manager -ldflags "-X github.com/anza-labs/image-builder/version.Version=$VERSION" cmd/main.go && \
+RUN xx-go build -trimpath -a -o manager \
+        -ldflags "-X github.com/anza-labs/image-builder/version.Version=$VERSION -X github.com/anza-labs/image-builder/version.OCIRepository=$OCI_REPOSITORY" \
+        cmd/main.go && \
     xx-verify manager
 
 # Use distroless as minimal base image to package the manager binary

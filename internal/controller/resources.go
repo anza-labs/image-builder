@@ -20,6 +20,7 @@ import (
 
 	anzalabsdevv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
 	"github.com/anza-labs/image-builder/internal/naming"
+	"github.com/anza-labs/image-builder/version"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -106,7 +107,7 @@ func ConfigMap(image *anzalabsdevv1alpha1.Image) *corev1.ConfigMap {
 	}
 }
 
-func Job(image *anzalabsdevv1alpha1.Image, version string) *batchv1.Job {
+func Job(image *anzalabsdevv1alpha1.Image) *batchv1.Job {
 	outputSecret := image.Spec.Result
 	bucketCredentials := image.Spec.BucketCredentials
 	format := image.Spec.Format
@@ -122,7 +123,7 @@ func Job(image *anzalabsdevv1alpha1.Image, version string) *batchv1.Job {
 	}
 
 	if containerImage == "" {
-		containerImage = fmt.Sprintf("ghcr.io/anza-labs/image-builder:%s", version)
+		containerImage = fmt.Sprintf("%s/image-builder:%s", version.OCIRepository, version.Version)
 	}
 
 	return &batchv1.Job{
@@ -141,6 +142,9 @@ func Job(image *anzalabsdevv1alpha1.Image, version string) *batchv1.Job {
 						{
 							Name:  "builder",
 							Image: containerImage,
+							Args: []string{
+								"--v=4",
+							},
 							Env: []corev1.EnvVar{
 								{Name: "K8S_NAME", ValueFrom: &corev1.EnvVarSource{
 									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},

@@ -1,6 +1,8 @@
 # Image URL to use all building/pushing image targets
-IMG_CONTROLLER ?= localhost:5005/image-builder-controller:dev
-IMG_BUILDER    ?= localhost:5005/image-builder:dev
+REPOSITORY     ?= localhost:5005
+TAG            ?= dev-$(shell git describe --match='' --always --abbrev=6 --dirty)
+IMG_CONTROLLER ?= $(REPOSITORY)/image-builder-controller:$(TAG)
+IMG_BUILDER    ?= $(REPOSITORY)/image-builder:$(TAG)
 PLATFORM       ?= linux/$(shell go env GOARCH)
 CHAINSAW_ARGS  ?=
 
@@ -142,7 +144,8 @@ docker-build-controller: ## Build docker image with the controller.
 	$(CONTAINER_TOOL) build \
 		--platform=${PLATFORM} \
 		--file=./Dockerfile \
-		--build-arg=VERSION="dev" \
+		--build-arg=VERSION=$(TAG) \
+		--build-arg=OCI_REPOSITORY=$(REPOSITORY) \
 		--tag=${IMG_CONTROLLER} .
 
 .PHONY: docker-build-builder
