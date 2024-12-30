@@ -28,7 +28,7 @@ jobs:
     needs:
       - unit
     concurrency:
-      group: ${{ github.workflow }}-${{ github.}}
+      group: ${{ github.workflow }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
