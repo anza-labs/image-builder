@@ -37,8 +37,8 @@ markdown_extensions:
 theme:
   name: material
   language: en
-  logo: assets/package.png
-  favicon: assets/package.png
+  logo: assets/logo.png
+  favicon: assets/logo.png
 
   custom_dir: docs/overrides
 

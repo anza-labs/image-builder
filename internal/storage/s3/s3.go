@@ -16,6 +16,7 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -86,8 +87,10 @@ type progressReader struct {
 func (r *progressReader) Read(p []byte) (int, error) {
 	n, err := r.underlying.Read(p)
 	if err != nil {
-		r.log.V(5).Error(err, "Underlying read errored",
-			"size.current", r.currentSize+int64(n))
+		if !errors.Is(err, io.EOF) {
+			r.log.V(5).Error(err, "Underlying read errored",
+				"size.current", r.currentSize+int64(n))
+		}
 		return n, err
 	}
 

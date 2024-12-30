@@ -108,20 +108,21 @@ func ConfigMap(image *anzalabsdevv1alpha1.Image) *corev1.ConfigMap {
 }
 
 func Job(image *anzalabsdevv1alpha1.Image) *batchv1.Job {
-	outputSecret := image.Spec.Result
 	bucketCredentials := image.Spec.BucketCredentials
 	format := image.Spec.Format
-	containerImage := image.Spec.BuilderImage
 	affinity := image.Spec.Affinity
 	resources := image.Spec.Resources
+	verbosity := image.Spec.BuilderVerbosity
 
 	config := image.Spec.Configuration
 	h := fmt.Sprintf("%x", sha256.Sum256([]byte(config)))
 
+	outputSecret := image.Spec.Result
 	if outputSecret.Name == "" {
 		outputSecret.Name = image.Name
 	}
 
+	containerImage := image.Spec.BuilderImage
 	if containerImage == "" {
 		containerImage = fmt.Sprintf("%s/image-builder:%s", version.OCIRepository, version.Version)
 	}
@@ -143,12 +144,10 @@ func Job(image *anzalabsdevv1alpha1.Image) *batchv1.Job {
 							Name:  "builder",
 							Image: containerImage,
 							Args: []string{
-								"--v=4",
+								fmt.Sprintf("--v=%d", verbosity),
 							},
 							Env: []corev1.EnvVar{
-								{Name: "K8S_NAME", ValueFrom: &corev1.EnvVarSource{
-									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
-								}},
+								{Name: "K8S_NAME", Value: image.Name},
 								{Name: "K8S_NAMESPACE", ValueFrom: &corev1.EnvVarSource{
 									FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"},
 								}},

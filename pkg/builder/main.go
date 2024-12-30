@@ -34,7 +34,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
@@ -127,9 +126,10 @@ func run(ctx context.Context, opts options) error {
 			Namespace: opts.K8sNamespace,
 			Name:      opts.OutputName,
 		},
-		StringData: map[string]string{},
-		Data:       map[string][]byte{},
+		Data: map[string][]byte{},
 	}
+
+	log.V(1).Info("Processing output objects", "objects", out)
 	for _, o := range out {
 		log.V(1).Info("Processing output file", "path", o.Path)
 		f, err := os.Open(o.Path)
@@ -150,18 +150,19 @@ func run(ctx context.Context, opts options) error {
 			return fmt.Errorf("failed to generate URL for object key %s: %w", objectKey, err)
 		}
 
-		if outputs.StringData == nil {
-			log.V(3).Info("StringData map was empty, initializing")
-			outputs.StringData = map[string]string{}
+		if outputs.Data == nil {
+			log.V(3).Info("Data map was empty, initializing")
+			outputs.Data = map[string][]byte{}
 		}
-		log.V(4).Info("New data added to secret", "key", objectKey, "value", url)
-		outputs.StringData[naming.DNSName(o.Name)] = fmt.Sprintf("%s = %s", objectKey, url)
 
-		log.V(1).Info("Creating or updating Kubernetes secret", "secret", klog.KObj(outputs))
-		_, err = controllerutil.CreateOrUpdate(ctx, cli, outputs, func() error { return nil })
-		if err != nil {
-			return fmt.Errorf("failed to create or update Kubernetes secret: %w", err)
-		}
+		log.V(6).Info("New data added to secret", "key", objectKey, "url", url)
+		outputs.Data[naming.DNSName(o.Name)] = []byte(fmt.Sprintf("%s = %s", objectKey, url))
+	}
+
+	log.V(1).Info("Creating or updating Kubernetes secret", "secret", klog.KObj(outputs))
+	err = cli.Create(ctx, outputs)
+	if err != nil {
+		return fmt.Errorf("failed to create or update Kubernetes secret: %w", err)
 	}
 
 	log.V(1).Info("Run completed successfully")

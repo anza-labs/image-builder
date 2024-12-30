@@ -982,6 +982,12 @@ spec:
                 description: BuilderImage indicates the container image to use for
                   the Builder job.
                 type: string
+              builderVerbosity:
+                default: 4
+                description: BuilderVerbosity specifies log verbosity of the builder.
+                maximum: 10
+                minimum: 0
+                type: integer
               configuration:
                 description: Configuration is a YAML formatted Linuxkit config.
                 type: string

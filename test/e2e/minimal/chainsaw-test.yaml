@@ -29,8 +29,6 @@ spec:
         - script:
             content: |
               make --directory=../../../ mc-play-test
-            check:
-              ($error != null): false
 
     - name: Create image with base configuration options
       try:
@@ -93,5 +91,3 @@ spec:
         - script:
             content: |
               make --directory=../../../ mc-play-test
-            check:
-              ($error != null): false

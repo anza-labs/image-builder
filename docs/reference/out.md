@@ -70,6 +70,7 @@ _Appears in:_
 | Field | Description | Default | Validation |
 | --- | --- | --- | --- |
 | `builderImage` _string_ | BuilderImage indicates the container image to use for the Builder job. |  |  |
+| `builderVerbosity` _integer_ | BuilderVerbosity specifies log verbosity of the builder. | 4 | Maximum: 10 <br />Minimum: 0 <br /> |
 | `resources` _[ResourceRequirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#resourcerequirements-v1-core)_ | Resources describe the compute resource requirements. |  |  |
 | `affinity` _[Affinity](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#affinity-v1-core)_ | Affinity specifies the scheduling constraints for Pods. |  |  |
 | `format` _string_ | Format specifies the image format. |  | Enum: [aws docker dynamic-vhd gcp iso-bios iso-efi iso-efi-initrd kernel+initrd kernel+iso kernel+squashfs qcow2-bios qcow2-efi raw-bios raw-efi rpi3 tar tar-kernel-initrd vhd vmdk] <br /> |

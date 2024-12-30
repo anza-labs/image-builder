@@ -25,6 +25,14 @@ type ImageSpec struct {
 	// +optional
 	BuilderImage string `json:"builderImage,omitempty"`
 
+	// BuilderVerbosity specifies log verbosity of the builder.
+	// +optional
+	// +default=4
+	// +kubebuilder:default=4
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=10
+	BuilderVerbosity uint8 `json:"builderVerbosity"`
+
 	// Resources describe the compute resource requirements.
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
