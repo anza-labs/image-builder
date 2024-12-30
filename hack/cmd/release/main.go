@@ -32,7 +32,7 @@ import (
 const (
 	defaultConfigPath = "./docs/.crd-ref-docs.yaml"
 	defaultImageName  = "controller"
-	defaultImageRef   = "ghcr.io/anza-labs/image-builder"
+	defaultImageRef   = "ghcr.io/anza-labs/image-builder-controller"
 )
 
 func runCommand(name string, args ...string) error {
