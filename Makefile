@@ -1,7 +1,10 @@
 # Image URL to use all building/pushing image targets
-IMG ?= ghcr.io/anza-labs/image-builder:main
-PLATFORM ?= linux/$(shell go env GOARCH)
-CHAINSAW_ARGS ?=
+REPOSITORY     ?= localhost:5005
+TAG            ?= dev-$(shell git describe --match='' --always --abbrev=6 --dirty)
+IMG_CONTROLLER ?= $(REPOSITORY)/image-builder-controller:$(TAG)
+IMG_BUILDER    ?= $(REPOSITORY)/image-builder:$(TAG)
+PLATFORM       ?= linux/$(shell go env GOARCH)
+CHAINSAW_ARGS  ?=
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -63,9 +66,15 @@ test: manifests generate ## Run tests.
 test-e2e: chainsaw ## Run the e2e tests against a k8s instance using Kyverno Chainsaw.
 	$(CHAINSAW) test ${CHAINSAW_ARGS}
 
+BUCKET_NAME ?= test
+
 .PHONY: mc-play-test
 mc-play-test: mc
-	$(MC) mb --ignore-existing play/test
+	$(MC) mb --ignore-existing play/$(BUCKET_NAME)
+
+.PHONY: mc-play-test-cleanup
+mc-play-test-cleanup: mc
+	$(MC) rb --force play/$(BUCKET_NAME)
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter.
@@ -81,8 +90,15 @@ lint-manifests: kustomize kube-linter ## Run kube-linter on Kubernetes manifests
 		$(KUBE_LINTER) lint --config=./config/.kube-linter.yaml -
 
 .PHONY: hadolint
-hadolint: ## Run hadolint on Dockerfile
+hadolint: hadolint-manager hadolint-builder ## Run hadolint on all Dockerfiles.
+
+.PHONY: hadolint-manager
+hadolint-manager: ## Run hadolint on manager Dockerfile.
 	$(CONTAINER_TOOL) run --rm -i hadolint/hadolint < Dockerfile
+
+.PHONY: hadolint-builder
+hadolint-builder: ## Run hadolint on builder Dockerfile.
+	$(CONTAINER_TOOL) run --rm -i hadolint/hadolint < ./pkg/builder/Dockerfile
 
 .PHONY: verify-licenses
 verify-licenses: addlicense ## Run addlicense to verify if files have license headers.
@@ -128,19 +144,39 @@ release: ## Runs the script that generates new release.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
-docker-build: ## Build docker image with the manager.
+docker-build: docker-build-controller docker-build-builder ## Build all docker images.
+
+.PHONY: docker-build-controller
+docker-build-controller: ## Build docker image with the controller.
 	$(CONTAINER_TOOL) build \
 		--platform=${PLATFORM} \
-		--tag=${IMG} .
+		--file=./Dockerfile \
+		--build-arg=VERSION=$(TAG) \
+		--build-arg=OCI_REPOSITORY=$(REPOSITORY) \
+		--tag=${IMG_CONTROLLER} .
+
+.PHONY: docker-build-builder
+docker-build-builder: ## Build docker image with the builder.
+	$(CONTAINER_TOOL) build \
+		--platform=${PLATFORM} \
+		--file=./pkg/builder/Dockerfile \
+		--tag=${IMG_BUILDER} .
 
 .PHONY: docker-push
-docker-push: ## Push docker image with the manager.
-	$(CONTAINER_TOOL) push ${IMG}
+docker-push: docker-push-controller docker-push-builder ## Push all docker images.
+
+.PHONY: docker-push-controller
+docker-push-controller: ## Push docker image with the controller.
+	$(CONTAINER_TOOL) push ${IMG_CONTROLLER}
+
+.PHONY: docker-push-builder
+docker-push-builder: ## Push docker image with the builder.
+	$(CONTAINER_TOOL) push ${IMG_BUILDER}
 
 .PHONY: build-installer
 build-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
 	mkdir -p dist
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG_CONTROLLER}
 	$(KUSTOMIZE) build config/default > dist/install.yaml
 
 ##@ Documentation
@@ -169,14 +205,12 @@ cluster-reset: kind ctlptl
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG_CONTROLLER}
 	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
-	$(KUBECTL) apply -f config/s3/secret.yaml
 
 .PHONY: undeploy
 undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
-	$(KUBECTL) delete -f config/s3/secret.yaml
 
 ##@ Dependencies
 
@@ -211,53 +245,53 @@ KUSTOMIZE_VERSION        ?= $(shell grep 'sigs.k8s.io/kustomize/kustomize/v5 ' .
 MC_VERSION               ?= latest
 
 .PHONY: addlicense
-addlicense: $(ADDLICENSE)$(ADDLICENSE_VERSION) ## Download addlicense locally if necessary.
-$(ADDLICENSE)$(ADDLICENSE_VERSION): $(LOCALBIN)
+addlicense: $(ADDLICENSE)-$(ADDLICENSE_VERSION) ## Download addlicense locally if necessary.
+$(ADDLICENSE)-$(ADDLICENSE_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(ADDLICENSE),github.com/google/addlicense,$(ADDLICENSE_VERSION))
 
 .PHONY: chainsaw
-chainsaw: $(CHAINSAW)$(CHAINSAW_VERSION) ## Download chainsaw locally if necessary.
-$(CHAINSAW)$(CHAINSAW_VERSION): $(LOCALBIN)
+chainsaw: $(CHAINSAW)-$(CHAINSAW_VERSION) ## Download chainsaw locally if necessary.
+$(CHAINSAW)-$(CHAINSAW_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(CHAINSAW),github.com/kyverno/chainsaw,$(CHAINSAW_VERSION))
 
 .PHONY: controller-gen
-controller-gen: $(CONTROLLER_GEN)$(CONTROLLER_TOOLS_VERSION) ## Download controller-gen locally if necessary.
-$(CONTROLLER_GEN)$(CONTROLLER_TOOLS_VERSION): $(LOCALBIN)
+controller-gen: $(CONTROLLER_GEN)-$(CONTROLLER_TOOLS_VERSION) ## Download controller-gen locally if necessary.
+$(CONTROLLER_GEN)-$(CONTROLLER_TOOLS_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen,$(CONTROLLER_TOOLS_VERSION))
 
 .PHONY: crd-ref-docs
-crd-ref-docs: $(CRD_REF_DOCS)$(CRD_REF_DOCS_VERSION) ## Download crd-ref-docs locally if necessary.
-$(CRD_REF_DOCS)$(CRD_REF_DOCS_VERSION): $(LOCALBIN)
+crd-ref-docs: $(CRD_REF_DOCS)-$(CRD_REF_DOCS_VERSION) ## Download crd-ref-docs locally if necessary.
+$(CRD_REF_DOCS)-$(CRD_REF_DOCS_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(CRD_REF_DOCS),github.com/elastic/crd-ref-docs,$(CRD_REF_DOCS_VERSION))
 
 .PHONY: ctlptl
-ctlptl: $(CTLPTL)$(CTLPTL_VERSION) ## Download ctlptl locally if necessary.
-$(CTLPTL)$(CTLPTL_VERSION): $(LOCALBIN)
+ctlptl: $(CTLPTL)-$(CTLPTL_VERSION) ## Download ctlptl locally if necessary.
+$(CTLPTL)-$(CTLPTL_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(CTLPTL),github.com/tilt-dev/ctlptl/cmd/ctlptl,$(CTLPTL_VERSION))
 
 .PHONY: golangci-lint
-golangci-lint: $(GOLANGCI_LINT)$(GOLANGCI_LINT_VERSION) ## Download golangci-lint locally if necessary.
-$(GOLANGCI_LINT)$(GOLANGCI_LINT_VERSION): $(LOCALBIN)
+golangci-lint: $(GOLANGCI_LINT)-$(GOLANGCI_LINT_VERSION) ## Download golangci-lint locally if necessary.
+$(GOLANGCI_LINT)-$(GOLANGCI_LINT_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
 
 .PHONY: kind
-kind: $(KIND)$(KIND_VERSION) ## Download kind locally if necessary.
-$(KIND)$(KIND_VERSION): $(LOCALBIN)
+kind: $(KIND)-$(KIND_VERSION) ## Download kind locally if necessary.
+$(KIND)-$(KIND_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(KIND),sigs.k8s.io/kind,$(KIND_VERSION))
 
 .PHONY: kube-linter
-kube-linter: $(KUBE_LINTER)$(KUBE_LINTER_VERSION)
-$(KUBE_LINTER)$(KUBE_LINTER_VERSION): $(LOCALBIN)
+kube-linter: $(KUBE_LINTER)-$(KUBE_LINTER_VERSION)
+$(KUBE_LINTER)-$(KUBE_LINTER_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(KUBE_LINTER),golang.stackrox.io/kube-linter/cmd/kube-linter,$(KUBE_LINTER_VERSION))
 
 .PHONY: kustomize
-kustomize: $(KUSTOMIZE)$(KUSTOMIZE_VERSION) ## Download kustomize locally if necessary.
-$(KUSTOMIZE)$(KUSTOMIZE_VERSION): $(LOCALBIN)
+kustomize: $(KUSTOMIZE)-$(KUSTOMIZE_VERSION) ## Download kustomize locally if necessary.
+$(KUSTOMIZE)-$(KUSTOMIZE_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5,$(KUSTOMIZE_VERSION))
 
 .PHONY: mc
-mc: $(MC)$(MC_VERSION) ## Download kustomize locally if necessary.
-$(MC)$(MC_VERSION): $(LOCALBIN)
+mc: $(MC)-$(MC_VERSION) ## Download kustomize locally if necessary.
+$(MC)-$(MC_VERSION): $(LOCALBIN)
 	$(call go-install-tool,$(MC),github.com/minio/mc,$(MC_VERSION))
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist

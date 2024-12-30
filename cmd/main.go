@@ -21,7 +21,6 @@ import (
 
 	anzalabsdevv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
 	"github.com/anza-labs/image-builder/internal/controller"
-	"github.com/anza-labs/image-builder/pkg/builder"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -139,16 +138,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	builder, err := builder.New()
-	if err != nil {
-		setupLog.Error(err, "Unable to create builder")
-		os.Exit(1)
-	}
-
 	if err = (&controller.ImageReconciler{
-		Client:  mgr.GetClient(),
-		Scheme:  mgr.GetScheme(),
-		Builder: builder,
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Unable to create controller", "controller", "Image")
 		os.Exit(1)

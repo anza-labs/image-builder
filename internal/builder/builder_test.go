@@ -12,25 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package naming
+package builder
 
 import (
+	"context"
+	"os"
 	"path"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func Key(namespace, name, format, key string) string {
-	return path.Clean(path.Join(
-		DNSName(namespace),
-		DNSName(name),
-		DNSName(format),
-		DNSName(key),
-	))
-}
+var simple = "test/simple.yaml"
 
-func Container() string {
-	return "image-builder"
-}
+func TestBuild(t *testing.T) {
+	b, err := New()
+	require.NoError(t, err)
 
-func ConfigMap(base, hash string) string {
-	return DNSName(Truncate("%s-%s", 63, base, hash))
+	out, err := b.Build(context.Background(), "kernel+initrd", simple)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, out)
+
+	defer func() {
+		for _, o := range out {
+			err := os.RemoveAll(o.Path)
+			assert.NoError(t, err)
+		}
+		if len(out) != 0 {
+			err = os.RemoveAll(path.Dir(out[0].Path))
+			assert.NoError(t, err)
+		}
+	}()
 }

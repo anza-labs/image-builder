@@ -57,7 +57,11 @@ spec:
           - --health-probe-bind-address=:8081
         image: controller:latest
         name: manager
+        ports:
+        - name: healthz
+          containerPort: 8081
         securityContext:
+          readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           capabilities:
             drop:

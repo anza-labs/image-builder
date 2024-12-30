@@ -21,6 +21,18 @@ import (
 
 // ImageSpec defines the desired state of Image.
 type ImageSpec struct {
+	// BuilderImage indicates the container image to use for the Builder job.
+	// +optional
+	BuilderImage string `json:"builderImage,omitempty"`
+
+	// Resources describe the compute resource requirements.
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Affinity specifies the scheduling constraints for Pods.
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
 	// Format specifies the image format.
 	// +kubebuilder:validation:Enum=aws;docker;dynamic-vhd;gcp;iso-bios;iso-efi;iso-efi-initrd;kernel+initrd;kernel+iso;kernel+squashfs;qcow2-bios;qcow2-efi;raw-bios;raw-efi;rpi3;tar;tar-kernel-initrd;vhd;vmdk
 	// +required
@@ -30,9 +42,14 @@ type ImageSpec struct {
 	// +required
 	Configuration string `json:"configuration"`
 
+	// Result is a local reference that lists downloadable objects, that are results of the image building.
+	// Defaults to the Image.Metadata.Name.
+	// +optional
+	Result corev1.LocalObjectReference `json:"result"`
+
 	// BucketCredentials is a reference to the credentials for S3, where the image will be stored.
 	// +required
-	BucketCredentials corev1.SecretReference `json:"bucketCredentials"`
+	BucketCredentials corev1.LocalObjectReference `json:"bucketCredentials"`
 }
 
 // ImageStatus defines the observed state of Image.
@@ -40,17 +57,11 @@ type ImageStatus struct {
 	// Ready indicates whether the image is ready.
 	// +optional
 	Ready bool `json:"ready"`
-
-	// Objects is a list of downloadable objects, that are results of the image building
-	Objects map[string]string `json:"objects"`
-
-	// Conditions lists the conditions of the image resource.
-	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready"
 
 // Image is the Schema for the images API.
 type Image struct {

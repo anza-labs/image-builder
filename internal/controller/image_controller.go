@@ -16,19 +16,15 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
 
 	anzalabsdevv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
-	"github.com/anza-labs/image-builder/internal/naming"
-	"github.com/anza-labs/image-builder/internal/s3"
-	"github.com/anza-labs/image-builder/pkg/builder"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,180 +40,179 @@ const (
 // ImageReconciler reconciles a Image object.
 type ImageReconciler struct {
 	client.Client
-	Scheme  *runtime.Scheme
-	Builder *builder.Builder
+	Scheme *runtime.Scheme
 }
 
+//nolint:lll // kubebuilder directives can exceed length limit
 // +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=images,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=images/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=images/finalizers,verbs=update
-// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=secrets/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=core,resources=secrets/finalizers,verbs=update
+// +kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=serviceaccounts/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=core,resources=serviceaccounts/finalizers,verbs=update
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=configmaps/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=core,resources=configmaps/finalizers,verbs=update
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=batch,resources=jobs/finalizers,verbs=update
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles/finalizers,verbs=update
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx, "image", klog.KRef(req.Namespace, req.Name))
+	log := log.FromContext(ctx)
 
-	log.V(3).Info("Fetching object")
+	log.V(3).Info("Fetching Image object")
 	image := &anzalabsdevv1alpha1.Image{}
 	if err := r.Get(ctx, req.NamespacedName, image); err != nil {
+		log.V(0).Error(err, "Failed to fetch Image object")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// Handle finalizer logic
 	if image.ObjectMeta.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(image, imageFinalizer) {
 			log.V(3).Info("Adding finalizer")
 			controllerutil.AddFinalizer(image, imageFinalizer)
 			if err := r.Update(ctx, image); err != nil {
+				log.V(0).Error(err, "Failed to update Image object with finalizer")
 				return ctrl.Result{}, err
 			}
 		}
 	} else {
 		if controllerutil.ContainsFinalizer(image, imageFinalizer) {
-			log.V(1).Info("Deleting external resources")
-			if err := r.deleteExternalResources(ctx, image); err != nil {
+			// Perform cleanup
+			log.V(3).Info("Performing cleanup and removing finalizer")
+			if err := r.cleanupResources(ctx, image); err != nil {
+				log.V(0).Error(err, "Failed to clean up resources")
 				return ctrl.Result{}, err
 			}
-
-			log.V(3).Info("Removing finalizer")
 			controllerutil.RemoveFinalizer(image, imageFinalizer)
 			if err := r.Update(ctx, image); err != nil {
+				log.V(0).Error(err, "Failed to update Image object during finalizer removal")
 				return ctrl.Result{}, err
 			}
 		}
-
 		return ctrl.Result{}, nil
 	}
 
-	log.V(1).Info("Building image", "format", image.Spec.Format)
-	obj, err := r.buildImage(ctx, image)
-	image.Status.Objects = obj
-	if err != nil {
-		if obj != nil {
-			image.Status.Ready = false
-			if statusErr := r.Status().Update(ctx, image); statusErr != nil {
-				return ctrl.Result{}, errors.Join(err, statusErr)
-			}
-		}
-
+	job := Job(image)
+	if err := r.ensureResources(ctx, image,
+		ServiceAccount(image),
+		Role(image),
+		RoleBinding(image),
+		ConfigMap(image),
+		job,
+	); err != nil {
+		log.V(0).Error(err, "Failed to ensure resources")
 		return ctrl.Result{}, err
 	}
 
-	log.V(1).Info("Image built and uploaded, updating status")
-	image.Status.Ready = true
-	if statusErr := r.Status().Update(ctx, image); statusErr != nil {
-		return ctrl.Result{}, errors.Join(err, statusErr)
+	// Update status based on Job completion
+	log.V(3).Info("Checking Job completion")
+	jobStatus := &batchv1.Job{}
+	if err := r.Get(ctx, client.ObjectKeyFromObject(job), jobStatus); err != nil {
+		log.V(0).Error(err, "Failed to fetch Job status")
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	if jobStatus.Status.Succeeded > 0 {
+		log.V(3).Info("Job completed successfully")
+		image.Status.Ready = true
+		if err := r.Status().Update(ctx, image); err != nil {
+			log.V(0).Error(err, "Failed to update Image status")
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *ImageReconciler) createClient(ctx context.Context, image *anzalabsdevv1alpha1.Image) (*s3.Client, error) {
-	credentials := image.Spec.BucketCredentials
-	if credentials.Name == "" {
-		return nil, errors.New("bucket credentials are missing")
-	}
+// ensureResource ensures that a resource is created or updated.
+func (r *ImageReconciler) ensureResources(ctx context.Context, owner client.Object, objs ...client.Object) error {
+	log := log.FromContext(ctx, "owner", klog.KObj(owner))
 
-	namespace := credentials.Namespace
-	if namespace == "" {
-		namespace = image.GetNamespace()
-	}
+	for _, resource := range objs {
+		log.V(3).Info("Ensuring object exists",
+			"name", resource.GetName(),
+			"kind", resource.GetObjectKind().GroupVersionKind().Kind)
 
-	secret := &corev1.Secret{}
-	if err := r.Get(
-		ctx,
-		types.NamespacedName{
-			Namespace: namespace,
-			Name:      credentials.Name,
-		},
-		secret,
-	); err != nil {
-		return nil, fmt.Errorf("failed to get secret %s: %w", credentials.Name, err)
-	}
-
-	// Unmarshal secret data into an s3.Config
-	var config s3.Config
-	if err := json.Unmarshal(secret.Data["BucketInfo.json"], &config); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal bucket credentials: %w", err)
-	}
-
-	// Create an S3 client
-	client, err := s3.New(config, true)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create S3 client: %w", err)
-	}
-
-	return client, nil
-}
-
-func (r *ImageReconciler) deleteExternalResources(ctx context.Context, image *anzalabsdevv1alpha1.Image) error {
-	log := log.FromContext(ctx, "image", klog.KObj(image))
-
-	s3cli, err := r.createClient(ctx, image)
-	if err != nil {
-		return fmt.Errorf("failed to create S3 client: %w", err)
-	}
-
-	for objectKey := range image.Status.Objects {
-		log.V(3).Info("Removing object", "object.key", objectKey)
-
-		ok, err := s3cli.Stat(ctx, objectKey)
+		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, resource, func() error {
+			return ctrl.SetControllerReference(owner, resource, r.Scheme)
+		})
 		if err != nil {
-			return fmt.Errorf("failed to stat object: %w", err)
-		} else if !ok {
-			log.V(3).Info("Skipping, object does not exist", "object.key", objectKey)
-			continue
-		}
-
-		if err := s3cli.Delete(ctx, objectKey); err != nil {
-			return fmt.Errorf("failed to delete object: %w", err)
+			return err
 		}
 	}
 
 	return nil
 }
 
-func (r *ImageReconciler) buildImage(ctx context.Context, image *anzalabsdevv1alpha1.Image) (map[string]string, error) {
-	log := log.FromContext(ctx, "image", klog.KObj(image))
+// cleanupResources removes resources owned by the Image.
+func (r *ImageReconciler) cleanupResources(ctx context.Context, image *anzalabsdevv1alpha1.Image) error {
+	log := log.FromContext(ctx, "image", klog.KRef(image.Namespace, image.Name))
+	log.V(3).Info("Cleaning up resources")
 
-	s3cli, err := r.createClient(ctx, image)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create S3 client: %w", err)
+	// Define a list of owned resources to delete
+	resourceTypes := []client.ObjectList{
+		&batchv1.JobList{},
+		&corev1.ConfigMapList{},
+		&corev1.SecretList{},
+		&corev1.ServiceAccountList{},
+		&rbacv1.RoleList{},
+		&rbacv1.RoleBindingList{},
 	}
 
-	out, err := r.Builder.Build(ctx, image.Spec.Format, image.Spec.Configuration)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build image: %w", err)
-	}
-
-	objects := make(map[string]string)
-	for _, out := range out {
-		log.V(3).Info("Uploading object", "object.name", out.Name)
-
-		f, err := os.Open(out.Path)
+	ownerUID := image.GetUID()
+	for _, resourceType := range resourceTypes {
+		list := resourceType.DeepCopyObject().(client.ObjectList)
+		err := r.List(ctx, list, client.InNamespace(image.Namespace))
 		if err != nil {
-			return objects, fmt.Errorf("failed to open artifact %s: %w", out.Name, err)
+			return fmt.Errorf("failed to list objects: %w", err)
 		}
 
-		objectKey := naming.Key(image, out.Name)
-		if err := s3cli.Put(ctx, objectKey, f, out.Size); err != nil {
-			return objects, fmt.Errorf("failed to upload image: %w", err)
-		}
-		objects[objectKey] = ""
-
-		url, err := s3cli.GetURL(ctx, objectKey)
+		// Iterate over resources and delete them
+		items, err := meta.ExtractList(list)
 		if err != nil {
-			return objects, fmt.Errorf("failed to generate url: %w", err)
+			return fmt.Errorf("failed to extract list: %w", err)
 		}
-		objects[objectKey] = url
+		for _, item := range items {
+			resource := item.(client.Object)
+			for _, ref := range resource.GetOwnerReferences() {
+				if ref.UID == ownerUID {
+					log.V(3).Info("Deleting resource",
+						"name", resource.GetName(),
+						"kind", resource.GetObjectKind().GroupVersionKind().Kind)
+					if err := r.Delete(ctx, resource); err != nil {
+						return fmt.Errorf("failed to delete resource: %w", err)
+					}
+				}
+			}
+		}
 	}
 
-	return objects, nil
+	log.V(3).Info("Cleanup complete")
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&anzalabsdevv1alpha1.Image{}).
+		Owns(&batchv1.Job{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&corev1.Secret{}).
+		Owns(&corev1.ServiceAccount{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
 		Complete(r)
 }

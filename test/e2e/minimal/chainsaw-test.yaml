@@ -24,20 +24,15 @@ spec:
                 namespace: image-builder-system
               status:
                 availableReplicas: 1
-        - assert:
-            resource:
-              apiVersion: v1
-              kind: Secret
-              metadata:
-                name: s3-credentials
-                namespace: kube-system
+        - apply:
+            file: ../../../config/s3/secret.yaml
         - script:
             content: |
               make --directory=../../../ mc-play-test
             check:
               ($error != null): false
 
-    - name: Create registry with all configuration options
+    - name: Create image with base configuration options
       try:
         - create:
             resource:
@@ -66,12 +61,25 @@ spec:
                       - INSECURE=true
                 bucketCredentials:
                   name: s3-credentials
-                  namespace: kube-system
 
-    - name: Wait for Registry status to be ready and resources to be deployed
+    - name: Wait for Image status to be ready and resources to be deployed
       try:
         - assert:
             timeout: 10m
+            resource:
+              apiVersion: batch/v1
+              kind: Job
+              metadata:
+                name: minimal
+        - wait:
+            timeout: 10m
+            apiVersion: batch/v1
+            kind: Job
+            name: minimal
+            for:
+              condition:
+                name: complete
+        - assert:
             resource:
               apiVersion: image-builder.anza-labs.dev/v1alpha1
               kind: Image
@@ -79,3 +87,11 @@ spec:
                 name: minimal
               status:
                 ready: true
+
+    - name: Celeanup after test
+      try:
+        - script:
+            content: |
+              make --directory=../../../ mc-play-test
+            check:
+              ($error != null): false

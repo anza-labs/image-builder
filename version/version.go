@@ -12,39 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package version
 
-import (
-	"context"
-	"os"
-	"path"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	_ "embed"
+var (
+	Version       string
+	OCIRepository string
 )
-
-//go:embed test/simple.yaml
-var simple string
-
-func TestBuild(t *testing.T) {
-	b, err := New()
-	require.NoError(t, err)
-
-	out, err := b.Build(context.Background(), "kernel+initrd", simple)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, out)
-
-	defer func() {
-		for _, o := range out {
-			err := os.RemoveAll(o.Path)
-			assert.NoError(t, err)
-		}
-		if len(out) != 0 {
-			err = os.RemoveAll(path.Dir(out[0].Path))
-			assert.NoError(t, err)
-		}
-	}()
-}

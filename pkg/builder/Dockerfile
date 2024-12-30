@@ -2,13 +2,16 @@
 # hadolint ignore=DL3006
 FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
 
+# Build the linuxkit binary
+FROM docker.io/library/golang:1.23 AS linuxkit
+ENV CGO_ENABLED=0
+RUN go install github.com/linuxkit/linuxkit/src/cmd/linuxkit@v0.0.0-20241001125717-ad95c6fc2e48
+
 # Build the manager binary
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.23 AS builder
 ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETPLATFORM
-ARG VERSION="dev"
-ARG OCI_REPOSITORY="ghcr.io/anza-labs"
 COPY --from=xx / /
 
 WORKDIR /workspace
@@ -22,23 +25,22 @@ RUN xx-go mod download
 # Copy the go source
 COPY hack/ hack/
 COPY version/ version/
-COPY cmd/main.go cmd/main.go
 COPY api/ api/
 COPY pkg/ pkg/
 COPY internal/ internal/
 
 # Build
 ENV CGO_ENABLED=0
-RUN xx-go build -trimpath -a -o manager \
-        -ldflags "-X github.com/anza-labs/image-builder/version.Version=$VERSION -X github.com/anza-labs/image-builder/version.OCIRepository=$OCI_REPOSITORY" \
-        cmd/main.go && \
-    xx-verify manager
+RUN xx-go build -trimpath -a -o builder pkg/builder/main.go && \
+    xx-verify builder
 
-# Use distroless as minimal base image to package the manager binary
+# Use distroless as minimal base image to package the builder binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY --from=builder /workspace/manager .
+COPY --from=builder /workspace/builder .
+COPY --from=linuxkit /go/bin/linuxkit .
 USER 65532:65532
+VOLUME ["/tmp"]
 
-ENTRYPOINT ["/manager"]
+ENTRYPOINT ["/builder"]
