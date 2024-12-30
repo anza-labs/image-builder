@@ -1,7 +1,7 @@
 images:
 - name: controller
-  newName: ghcr.io/anza-labs/image-builder
-  newTag: v0.2.0
+  newName: ghcr.io/anza-labs/image-builder-controller
+  newTag: v0.2.1
 namePrefix: image-builder-
 namespace: image-builder-system
 resources:
