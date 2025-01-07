@@ -1198,11 +1198,11 @@ spec:
                             type: object
                           type: array
                         itemsConfigMap:
-                          description: "ItemsConfigMap specifies a ConfigMap mapping
-                            item names to object storage keys.\nEach value should
-                            either be a key of the object or follow the format \"key
-                            = <Presigned URL>\",\ne.g.:\n\titem-1: \"path/to/item-1
-                            = <Presigned URL>\"\n\titem-2: \"path/to/item-2\""
+                          description: "ItemsSecret specifies a Scret mapping item
+                            names to object storage keys.\nEach value should either
+                            be a key of the object or follow the format \"key = <Presigned
+                            URL>\",\ne.g.:\n\titem-1: \"path/to/item-1 = <Presigned
+                            URL>\"\n\titem-2: \"path/to/item-2\""
                           properties:
                             name:
                               default: ""
@@ -2363,6 +2363,8 @@ spec:
                 type: object
                 x-kubernetes-map-type: atomic
               builder:
+                description: Builder specifies the parameters for the main container
+                  configuration.
                 properties:
                   image:
                     description: Image indicates the container image to use for the
@@ -2463,6 +2465,8 @@ spec:
                 - vmdk
                 type: string
               gitFetcher:
+                description: GitFetcher specifies the parameters for the Git Fetcher
+                  init container configuration.
                 properties:
                   image:
                     description: Image indicates the container image to use for the
@@ -2537,6 +2541,8 @@ spec:
                     type: integer
                 type: object
               objFetcher:
+                description: ObjFetcher specifies the parameters for the Object Fetcher
+                  init container configuration.
                 properties:
                   image:
                     description: Image indicates the container image to use for the
@@ -2628,11 +2634,8 @@ spec:
                 x-kubernetes-map-type: atomic
             required:
             - bucketCredentials
-            - builder
             - configuration
             - format
-            - gitFetcher
-            - objFetcher
             type: object
           status:
             description: ImageStatus defines the observed state of an Image resource.

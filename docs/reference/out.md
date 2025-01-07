@@ -155,7 +155,7 @@ _Appears in:_
 | --- | --- | --- | --- |
 | `credentials` _[LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#localobjectreference-v1-core)_ | Credentials is a reference to the credentials for accessing the bucket. |  |  |
 | `items` _[KeyToPath](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#keytopath-v1-core) array_ | Items specifies specific items within the bucket to include. |  |  |
-| `itemsConfigMap` _[LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#localobjectreference-v1-core)_ | ItemsConfigMap specifies a ConfigMap mapping item names to object storage keys.<br />Each value should either be a key of the object or follow the format "key = <Presigned URL>",<br />e.g.:<br />	item-1: "path/to/item-1 = <Presigned URL>"<br />	item-2: "path/to/item-2" |  |  |
+| `itemsConfigMap` _[LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#localobjectreference-v1-core)_ | ItemsSecret specifies a Scret mapping item names to object storage keys.<br />Each value should either be a key of the object or follow the format "key = <Presigned URL>",<br />e.g.:<br />	item-1: "path/to/item-1 = <Presigned URL>"<br />	item-2: "path/to/item-2" |  |  |
 
 
 #### Container
@@ -272,9 +272,9 @@ _Appears in:_
 
 | Field | Description | Default | Validation |
 | --- | --- | --- | --- |
-| `builder` _[Container](#container)_ |  |  |  |
-| `objFetcher` _[Container](#container)_ |  |  |  |
-| `gitFetcher` _[Container](#container)_ |  |  |  |
+| `builder` _[Container](#container)_ | Builder specifies the parameters for the main container configuration. |  |  |
+| `objFetcher` _[Container](#container)_ | ObjFetcher specifies the parameters for the Object Fetcher init container configuration. |  |  |
+| `gitFetcher` _[Container](#container)_ | GitFetcher specifies the parameters for the Git Fetcher init container configuration. |  |  |
 | `affinity` _[Affinity](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#affinity-v1-core)_ | Affinity specifies the scheduling constraints for Pods running the builder job. |  |  |
 | `format` _string_ | Format specifies the output image format. |  | Enum: [aws docker dynamic-vhd gcp iso-bios iso-efi iso-efi-initrd kernel+initrd kernel+iso kernel+squashfs qcow2-bios qcow2-efi raw-bios raw-efi rpi3 tar tar-kernel-initrd vhd vmdk] <br /> |
 | `configuration` _string_ | Configuration is a YAML-formatted Linuxkit configuration. |  |  |

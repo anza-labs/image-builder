@@ -105,13 +105,24 @@ func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, nil
 	}
 
-	job := Job(image)
+	initCM, err := InitConfigMap(image)
+	if err != nil {
+		log.V(0).Error(err, "Failed to create init ConfigMap definition")
+		return ctrl.Result{}, err
+	}
+
+	job, err := Job(image)
+	if err != nil {
+		log.V(0).Error(err, "Failed to create Job definition")
+		return ctrl.Result{}, err
+	}
+
 	if err := r.ensureResources(ctx, image,
 		ServiceAccount(image),
 		Role(image),
 		RoleBinding(image),
 		ConfigMap(image),
-		InitConfigMap(image),
+		initCM,
 		job,
 	); err != nil {
 		log.V(0).Error(err, "Failed to ensure resources")

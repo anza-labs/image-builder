@@ -16,10 +16,12 @@ package controller
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 
 	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
+	"github.com/anza-labs/image-builder/internal/fetcherconfig"
 	"github.com/anza-labs/image-builder/internal/naming"
 	"github.com/anza-labs/image-builder/version"
 
@@ -89,18 +91,42 @@ func ServiceAccount(image *imagebuilderv1alpha2.Image) *corev1.ServiceAccount {
 	}
 }
 
-func InitConfigMap(image *imagebuilderv1alpha2.Image) *corev1.ConfigMap {
+func config(image *imagebuilderv1alpha2.Image) (string, error) {
+	data := fetcherconfig.Config{}
+	for _, ad := range image.Spec.AdditionalData {
+		if f := NewConfigMapEntryFrom(ad); f != nil {
+			data.Fetchers = append(data.Fetchers, *f)
+		}
+	}
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		return "", fmt.Errorf("unable to encode configuration: %w", err)
+	}
+
+	return string(b), nil
+}
+
+func InitConfigMap(image *imagebuilderv1alpha2.Image) (*corev1.ConfigMap, error) {
+	config, err := config(image)
+	if err != nil {
+		return nil, err
+	}
+	h := fmt.Sprintf("%x", sha256.Sum256([]byte(config)))
+
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "", // TODO
+			Name:      naming.ConfigMap(image.Name, h), // TODO
 			Namespace: image.Namespace,
 			Labels: map[string]string{
 				"app.kubernetes.io/name":       image.Name,
 				"app.kubernetes.io/managed-by": "image-builder",
 			},
 		},
-		Data: map[string]string{},
-	}
+		Data: map[string]string{
+			"fetcher.json": config,
+		},
+	}, nil
 }
 
 func ConfigMap(image *imagebuilderv1alpha2.Image) *corev1.ConfigMap {
@@ -122,7 +148,7 @@ func ConfigMap(image *imagebuilderv1alpha2.Image) *corev1.ConfigMap {
 	}
 }
 
-func Job(image *imagebuilderv1alpha2.Image) *batchv1.Job {
+func Job(image *imagebuilderv1alpha2.Image) (*batchv1.Job, error) {
 	affinity := image.Spec.Affinity
 
 	outputSecret := image.Spec.Result
@@ -141,6 +167,28 @@ func Job(image *imagebuilderv1alpha2.Image) *batchv1.Job {
 		volumeMounts = append(volumeMounts, vo.volumeMount)
 		initVolumeMounts = append(initVolumeMounts, vo.initVolumeMounts...)
 	}
+
+	config, err := config(image)
+	if err != nil {
+		return nil, err
+	}
+	h := fmt.Sprintf("%x", sha256.Sum256([]byte(config)))
+	fetcherCM := naming.ConfigMap(image.Name, h)
+	volumes = append(volumes, corev1.Volume{
+		Name: fetcherCM,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: fetcherCM,
+				},
+			},
+		},
+	})
+	initVolumeMounts = append(initVolumeMounts, corev1.VolumeMount{
+		Name:      fetcherCM,
+		ReadOnly:  true,
+		MountPath: "/etc/fetcher/config.json",
+	})
 
 	containers := []corev1.Container{
 		Container(image, volumeMounts...),
@@ -172,7 +220,7 @@ func Job(image *imagebuilderv1alpha2.Image) *batchv1.Job {
 				},
 			},
 		},
-	}
+	}, nil
 }
 
 func DefaultVolumes(image *imagebuilderv1alpha2.Image) []corev1.Volume {
@@ -301,23 +349,36 @@ func NewVolumeFrom(data imagebuilderv1alpha2.AdditionalData) volumeOpts {
 			},
 		}
 
-		objCreds := naming.Volume("%s-%s", data.Name, "objcreds")
-		vo.volumes = append(vo.volumes,
-			corev1.Volume{
-				Name: objCreds,
+		if data.DataSource.Bucket.ItemsSecret != nil {
+			items := naming.Volume("%s-%s", data.Name, "items")
+
+			vo.volumes = append(vo.volumes, corev1.Volume{
+				Name: items,
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
-						SecretName: data.Bucket.Credentials.Name,
+						SecretName: data.Bucket.ItemsSecret.Name,
 					},
 				},
+			})
+			vo.initVolumeMounts = append(vo.initVolumeMounts, corev1.VolumeMount{
+				Name:      items,
+				MountPath: filepath.Join("/etc/objfetcher", items),
+			})
+		}
+
+		objCreds := naming.Volume("%s-%s", data.Name, "objcreds")
+		vo.volumes = append(vo.volumes, corev1.Volume{
+			Name: objCreds,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: data.Bucket.Credentials.Name,
+				},
 			},
-		)
-		vo.initVolumeMounts = append(vo.initVolumeMounts,
-			corev1.VolumeMount{
-				Name:      objCreds,
-				MountPath: filepath.Join("/etc/objfetcher", objCreds),
-			},
-		)
+		})
+		vo.initVolumeMounts = append(vo.initVolumeMounts, corev1.VolumeMount{
+			Name:      objCreds,
+			MountPath: filepath.Join("/etc/objfetcher", objCreds),
+		})
 	}
 
 	if data.DataSource.ConfigMap != nil {
@@ -381,6 +442,51 @@ func NewVolumeFrom(data imagebuilderv1alpha2.AdditionalData) volumeOpts {
 	return vo
 }
 
-func NewConfigMapEntryFrom(data imagebuilderv1alpha2.AdditionalData) map[string]string {
-	return nil // TODO
+func mode(m *int32) int32 {
+	if m != nil {
+		return *m
+	}
+	return 0o755
+}
+
+func NewConfigMapEntryFrom(data imagebuilderv1alpha2.AdditionalData) *fetcherconfig.Fetcher {
+	config := &fetcherconfig.Fetcher{}
+
+	if data.DataSource.Bucket != nil {
+		objCreds := naming.Volume("%s-%s", data.Name, "objcreds")
+		config.ObjFetcher = &fetcherconfig.ObjFetcher{
+			MountPoint:      data.VolumeMountPoint,
+			CredentialsPath: filepath.Join("/etc/objfetcher", objCreds),
+		}
+
+		if data.DataSource.Bucket.ItemsSecret != nil {
+			items := naming.Volume("%s-%s", data.Name, "items")
+			config.ObjFetcher.KeysPath = filepath.Join("/etc/objfetcher", items)
+		}
+
+		for _, kv := range data.DataSource.Bucket.Items {
+			if config.ObjFetcher.Keys == nil {
+				config.ObjFetcher.Keys = make(map[string]fetcherconfig.File)
+			}
+			config.ObjFetcher.Keys[kv.Key] = fetcherconfig.File{
+				Path: kv.Path,
+				Mode: mode(kv.Mode),
+			}
+		}
+
+		return config
+	}
+
+	if data.DataSource.GitRepository != nil {
+		gitCreds := naming.Volume("%s-%s", data.Name, "gitcreds")
+		config.GitFetcher = &fetcherconfig.GitFetcher{
+			MountPoint:      data.VolumeMountPoint,
+			CredentialsPath: filepath.Join("/etc/gitfetcher", gitCreds),
+		}
+
+		return config
+	}
+
+	// otherwise, no-op
+	return nil
 }

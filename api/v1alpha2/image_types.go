@@ -21,9 +21,17 @@ import (
 
 // ImageSpec defines the desired state of an Image resource.
 type ImageSpec struct {
-	Builder    Container `json:"builder"`
-	ObjFetcher Container `json:"objFetcher"`
-	GitFetcher Container `json:"gitFetcher"`
+	// Builder specifies the parameters for the main container configuration.
+	// +optional
+	Builder Container `json:"builder,omitempty"`
+
+	// ObjFetcher specifies the parameters for the Object Fetcher init container configuration.
+	// +optional
+	ObjFetcher Container `json:"objFetcher,omitempty"`
+
+	// GitFetcher specifies the parameters for the Git Fetcher init container configuration.
+	// +optional
+	GitFetcher Container `json:"gitFetcher,omitempty"`
 
 	// Affinity specifies the scheduling constraints for Pods running the builder job.
 	// +optional
@@ -105,13 +113,13 @@ type BucketDataSource struct {
 	// +optional
 	Items []corev1.KeyToPath `json:"items,omitempty"`
 
-	// ItemsConfigMap specifies a ConfigMap mapping item names to object storage keys.
+	// ItemsSecret specifies a Scret mapping item names to object storage keys.
 	// Each value should either be a key of the object or follow the format "key = <Presigned URL>",
 	// e.g.:
 	//	item-1: "path/to/item-1 = <Presigned URL>"
 	//	item-2: "path/to/item-2"
 	// +optional
-	ItemsConfigMap *corev1.LocalObjectReference `json:"itemsConfigMap,omitempty"`
+	ItemsSecret *corev1.LocalObjectReference `json:"itemsConfigMap,omitempty"`
 }
 
 // GitRepository represents a Git repository data source.

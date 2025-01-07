@@ -54,8 +54,8 @@ func (in *BucketDataSource) DeepCopyInto(out *BucketDataSource) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.ItemsConfigMap != nil {
-		in, out := &in.ItemsConfigMap, &out.ItemsConfigMap
+	if in.ItemsSecret != nil {
+		in, out := &in.ItemsSecret, &out.ItemsSecret
 		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
