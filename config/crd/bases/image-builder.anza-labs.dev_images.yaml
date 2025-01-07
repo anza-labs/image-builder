@@ -18,6 +18,9 @@ spec:
     - jsonPath: .status.ready
       name: Ready
       type: string
+    deprecated: true
+    deprecationWarning: image-builder.anza-labs.dev/v1alpha1 Image is deprecated,
+      and will be removed in upcoming releases.
     name: v1alpha1
     schema:
       openAPIV3Schema:

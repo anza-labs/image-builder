@@ -251,7 +251,11 @@ func Container(image *imagebuilderv1alpha2.Image, extraVolumeMounts ...corev1.Vo
 	}
 }
 
-func InitCointainer(ctr imagebuilderv1alpha2.Container, name string, extraVolumeMounts ...corev1.VolumeMount) corev1.Container {
+func InitCointainer(
+	ctr imagebuilderv1alpha2.Container,
+	name string,
+	extraVolumeMounts ...corev1.VolumeMount,
+) corev1.Container {
 	containerImage := ctr.Image
 	if containerImage == "" {
 		containerImage = fmt.Sprintf("%s/image-builder-init-%s:%s", version.OCIRepository, name, version.Version)

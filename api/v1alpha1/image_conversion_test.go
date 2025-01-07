@@ -17,9 +17,11 @@ package v1alpha1
 import (
 	"testing"
 
-	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
 	"github.com/distribution/reference"
 	"github.com/stretchr/testify/assert"
+
+	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -69,6 +69,7 @@ type ImageStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:deprecatedversion:warning="image-builder.anza-labs.dev/v1alpha1 Image is deprecated, and will be removed in upcoming releases."
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready"
 
 // Image is the Schema for the images API.

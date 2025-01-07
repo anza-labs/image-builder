@@ -25,4 +25,7 @@ resources:
   kind: Image
   path: github.com/anza-labs/image-builder/api/v1alpha2
   version: v1alpha2
+  webhooks:
+    conversion: true
+    webhookVersion: v1
 version: "3"

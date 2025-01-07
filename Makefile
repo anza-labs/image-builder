@@ -212,6 +212,7 @@ endif
 .PHONY: cluster
 cluster: kind ctlptl
 	@PATH=${LOCALBIN}:$(PATH) $(CTLPTL) apply -f hack/kind.yaml
+	$(KUBECTL) apply -f https://github.com/cert-manager/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
 
 .PHONY: cluster-reset
 cluster-reset: kind ctlptl
@@ -249,6 +250,7 @@ MC             ?= $(LOCALBIN)/mc
 ## Tool Versions
 ADDLICENSE_VERSION       ?= $(shell grep 'github.com/google/addlicense '       ./go.mod | cut -d ' ' -f 2)
 CHAINSAW_VERSION         ?= $(shell grep 'github.com/kyverno/chainsaw '        ./go.mod | cut -d ' ' -f 2)
+CERT_MANAGER_VERSION     ?= v1.16.2
 CONTROLLER_TOOLS_VERSION ?= $(shell grep 'sigs.k8s.io/controller-tools '       ./go.mod | cut -d ' ' -f 2)
 CRD_REF_DOCS_VERSION     ?= $(shell grep 'github.com/elastic/crd-ref-docs '    ./go.mod | cut -d ' ' -f 2)
 CTLPTL_VERSION           ?= $(shell grep 'github.com/tilt-dev/ctlptl '         ./go.mod | cut -d ' ' -f 2)

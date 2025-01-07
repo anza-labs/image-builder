@@ -19,8 +19,10 @@ import (
 	"path"
 	"strings"
 
-	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
 	"github.com/distribution/reference"
+
+	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
+
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 

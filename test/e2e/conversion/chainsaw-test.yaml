@@ -2,9 +2,9 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
-  name: minimal
+  name: conversion
   labels:
-    area: 'minimal'
+    area: 'conversion'
 spec:
   timeouts:
     apply: 5s
@@ -31,10 +31,10 @@ spec:
       try:
         - create:
             resource:
-              apiVersion: image-builder.anza-labs.dev/v1alpha2
+              apiVersion: image-builder.anza-labs.dev/v1alpha1
               kind: Image
               metadata:
-                name: minimal
+                name: conversion
               spec:
                 format: 'kernel+initrd'
                 configuration: |
@@ -57,28 +57,11 @@ spec:
                 bucketCredentials:
                   name: s3-credentials
 
-    - name: Wait for Image status to be ready and resources to be deployed
+    - name: Check if the conversion happened
       try:
-        - assert:
-            timeout: 10m
-            resource:
-              apiVersion: batch/v1
-              kind: Job
-              metadata:
-                name: minimal
-        - wait:
-            timeout: 10m
-            apiVersion: batch/v1
-            kind: Job
-            name: minimal
-            for:
-              condition:
-                name: complete
         - assert:
             resource:
               apiVersion: image-builder.anza-labs.dev/v1alpha2
               kind: Image
               metadata:
-                name: minimal
-              status:
-                ready: true
+                name: conversion
