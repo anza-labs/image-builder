@@ -19,7 +19,8 @@ import (
 	"flag"
 	"os"
 
-	anzalabsdevv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
+	imagebuilderv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
+	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
 	"github.com/anza-labs/image-builder/internal/controller"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,7 +46,8 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(anzalabsdevv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(imagebuilderv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(imagebuilderv1alpha2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	anzalabsdevv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
+	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -72,7 +72,7 @@ func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	log := log.FromContext(ctx)
 
 	log.V(3).Info("Fetching Image object")
-	image := &anzalabsdevv1alpha1.Image{}
+	image := &imagebuilderv1alpha2.Image{}
 	if err := r.Get(ctx, req.NamespacedName, image); err != nil {
 		log.V(0).Error(err, "Failed to fetch Image object")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -111,6 +111,7 @@ func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		Role(image),
 		RoleBinding(image),
 		ConfigMap(image),
+		InitConfigMap(image),
 		job,
 	); err != nil {
 		log.V(0).Error(err, "Failed to ensure resources")
@@ -158,7 +159,7 @@ func (r *ImageReconciler) ensureResources(ctx context.Context, owner client.Obje
 }
 
 // cleanupResources removes resources owned by the Image.
-func (r *ImageReconciler) cleanupResources(ctx context.Context, image *anzalabsdevv1alpha1.Image) error {
+func (r *ImageReconciler) cleanupResources(ctx context.Context, image *imagebuilderv1alpha2.Image) error {
 	log := log.FromContext(ctx, "image", klog.KRef(image.Namespace, image.Name))
 	log.V(3).Info("Cleaning up resources")
 
@@ -207,7 +208,7 @@ func (r *ImageReconciler) cleanupResources(ctx context.Context, image *anzalabsd
 // SetupWithManager sets up the controller with the Manager.
 func (r *ImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&anzalabsdevv1alpha1.Image{}).
+		For(&imagebuilderv1alpha2.Image{}).
 		Owns(&batchv1.Job{}).
 		Owns(&corev1.ConfigMap{}).
 		Owns(&corev1.Secret{}).

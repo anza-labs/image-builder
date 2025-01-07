@@ -90,7 +90,7 @@ lint-manifests: kustomize kube-linter ## Run kube-linter on Kubernetes manifests
 		$(KUBE_LINTER) lint --config=./config/.kube-linter.yaml -
 
 .PHONY: hadolint
-hadolint: hadolint-manager hadolint-builder ## Run hadolint on all Dockerfiles.
+hadolint: hadolint-manager hadolint-builder hadolint-gitfetcher hadolint-objfetcher ## Run hadolint on all Dockerfiles.
 
 .PHONY: hadolint-manager
 hadolint-manager: ## Run hadolint on manager Dockerfile.
@@ -99,6 +99,9 @@ hadolint-manager: ## Run hadolint on manager Dockerfile.
 .PHONY: hadolint-builder
 hadolint-builder: ## Run hadolint on builder Dockerfile.
 	$(CONTAINER_TOOL) run --rm -i hadolint/hadolint < ./pkg/builder/Dockerfile
+
+hadolint-%: ## Run hadolint on init Dockerfile.
+	$(CONTAINER_TOOL) run --rm -i hadolint/hadolint < ./pkg/init/$*/Dockerfile
 
 .PHONY: verify-licenses
 verify-licenses: addlicense ## Run addlicense to verify if files have license headers.
@@ -145,7 +148,7 @@ release: ## Runs the script that generates new release.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
-docker-build: docker-build-controller docker-build-builder ## Build all docker images.
+docker-build: docker-build-controller docker-build-builder docker-build-gitfetcher docker-build-objfetcher ## Build all docker images.
 
 .PHONY: docker-build-controller
 docker-build-controller: ## Build docker image with the controller.
@@ -163,8 +166,14 @@ docker-build-builder: ## Build docker image with the builder.
 		--file=./pkg/builder/Dockerfile \
 		--tag=${IMG_BUILDER} .
 
+docker-build-%: ## Build docker image for init container.
+	$(CONTAINER_TOOL) build \
+		--platform=${PLATFORM} \
+		--file=./pkg/init/$*/Dockerfile \
+		--tag=$(REPOSITORY)/image-builder-init-$*:$(TAG) .
+
 .PHONY: docker-push
-docker-push: docker-push-controller docker-push-builder ## Push all docker images.
+docker-push: docker-push-controller docker-push-builder docker-push-gitfetcher docker-push-objfetcher ## Push all docker images.
 
 .PHONY: docker-push-controller
 docker-push-controller: ## Push docker image with the controller.
@@ -173,6 +182,9 @@ docker-push-controller: ## Push docker image with the controller.
 .PHONY: docker-push-builder
 docker-push-builder: ## Push docker image with the builder.
 	$(CONTAINER_TOOL) push ${IMG_BUILDER}
+
+docker-push-%: ## Push docker image for init container.
+	$(CONTAINER_TOOL) push $(REPOSITORY)/image-builder-init-$*:$(TAG)
 
 .PHONY: build-installer
 build-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
