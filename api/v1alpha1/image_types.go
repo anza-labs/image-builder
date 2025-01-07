@@ -73,6 +73,8 @@ type ImageStatus struct {
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready"
 
 // Image is the Schema for the images API.
+//
+// Deprecated: Due to breaking changes, v1alpha2 is a new default, and this version will be removed in upcoming releases.
 type Image struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -84,6 +86,8 @@ type Image struct {
 // +kubebuilder:object:root=true
 
 // ImageList contains a list of Image.
+//
+// Deprecated: Due to breaking changes, v1alpha2 is a new default, and this version will be removed in upcoming releases.
 type ImageList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

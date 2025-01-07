@@ -19,7 +19,7 @@ The following example demonstrates how to create a minimal image specification u
 ### Example Configuration
 
 ```yaml
-apiVersion: image-builder.anza-labs.dev/v1alpha1
+apiVersion: image-builder.anza-labs.dev/v1alpha2
 kind: Image
 metadata:
   name: minimal

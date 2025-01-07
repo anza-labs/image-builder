@@ -9,6 +9,9 @@
 
 Package v1alpha1 contains API Schema definitions for the  v1alpha1 API group
 
+Deprecated: Due to breaking changes, v1alpha2 is a new default, and this version will be removed in upcoming releases.
+
+
 ### Resource Types
 - [Image](#image)
 - [ImageList](#imagelist)
@@ -20,6 +23,9 @@ Package v1alpha1 contains API Schema definitions for the  v1alpha1 API group
 
 
 Image is the Schema for the images API.
+
+
+Deprecated: Due to breaking changes, v1alpha2 is a new default, and this version will be removed in upcoming releases.
 
 
 
@@ -42,6 +48,9 @@ _Appears in:_
 
 
 ImageList contains a list of Image.
+
+
+Deprecated: Due to breaking changes, v1alpha2 is a new default, and this version will be removed in upcoming releases.
 
 
 
