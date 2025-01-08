@@ -285,7 +285,9 @@ func Container(image *imagebuilderv1alpha2.Image, extraVolumeMounts ...corev1.Vo
 			fmt.Sprintf("--v=%d", verbosity),
 		},
 		Env: []corev1.EnvVar{
-			{Name: "K8S_NAME", Value: image.Name},
+			{Name: "K8S_NAME", ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
+			}},
 			{Name: "K8S_NAMESPACE", ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"},
 			}},
@@ -323,6 +325,15 @@ func InitCointainer(
 		},
 		VolumeMounts: volumeMounts,
 		Resources:    resources,
+		Env: []corev1.EnvVar{
+			{Name: "K8S_NAME", ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
+			}},
+			{Name: "K8S_NAMESPACE", ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"},
+			}},
+			{Name: "FETCHER_CONFIG", Value: "/config/fetcher.json"},
+		},
 	}
 }
 
@@ -482,6 +493,8 @@ func NewConfigMapEntryFrom(data imagebuilderv1alpha2.AdditionalData) *fetchercon
 		config.GitFetcher = &fetcherconfig.GitFetcher{
 			MountPoint:      data.VolumeMountPoint,
 			CredentialsPath: filepath.Join("/etc/gitfetcher", gitCreds),
+			Repository:      data.DataSource.GitRepository.Repository,
+			Ref:             data.DataSource.GitRepository.Ref,
 		}
 
 		return config

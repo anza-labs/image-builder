@@ -14,6 +14,32 @@
 
 package fetcherconfig
 
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+)
+
+func Load(path string) (*Config, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open config file: %w", err)
+	}
+	defer f.Close()
+
+	return LoadFrom(f)
+}
+
+func LoadFrom(r io.Reader) (*Config, error) {
+	cfg := &Config{}
+	if err := json.NewDecoder(r).Decode(cfg); err != nil {
+		return nil, fmt.Errorf("failed to decode config: %w", err)
+	}
+
+	return cfg, nil
+}
+
 type Config struct {
 	Fetchers []Fetcher `json:"fetchers"`
 }
@@ -26,6 +52,8 @@ type Fetcher struct {
 type GitFetcher struct {
 	MountPoint      string `json:"mountPoint"`
 	CredentialsPath string `json:"credentialsPath"`
+	Repository      string `json:"repository"`
+	Ref             string `json:"ref"`
 }
 
 type ObjFetcher struct {

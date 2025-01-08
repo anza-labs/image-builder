@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: localhost:5005/image-builder-controller
-  newTag: dev-93d183-dirty
+  newTag: dev-84ce21

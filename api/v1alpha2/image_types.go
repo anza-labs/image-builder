@@ -128,6 +128,11 @@ type GitRepository struct {
 	// +required
 	Repository string `json:"repository"`
 
+	// Ref specifies the branch, tag, or commit hash to be used from the Git repository.
+	// +optional
+	// +default="main"
+	Ref string `json:"ref"`
+
 	// Credentials specifies the credentials for accessing the repository.
 	// Secret must be one of the following types:
 	// 	- "kubernetes.io/basic-auth" with "username" and "password" fields;

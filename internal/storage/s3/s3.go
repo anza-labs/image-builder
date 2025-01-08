@@ -16,13 +16,12 @@ package s3
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 
-	"github.com/go-logr/logr"
+	"github.com/anza-labs/image-builder/internal/util"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
@@ -77,41 +76,26 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 	return c.s3cli.RemoveObject(ctx, c.bucketName, key, minio.RemoveObjectOptions{})
 }
 
-type progressReader struct {
-	log         logr.Logger
-	underlying  io.Reader
-	totalSize   int64
-	currentSize int64
-}
+func (c *Client) Get(ctx context.Context, key string, wr io.Writer) error {
+	pwr := &util.ProgressWriter{
+		Underlying: wr,
+		Log:        log.FromContext(ctx).WithName("ProgressWriter"),
+	}
 
-func (r *progressReader) Read(p []byte) (int, error) {
-	n, err := r.underlying.Read(p)
+	obj, err := c.s3cli.GetObject(ctx, c.bucketName, key, minio.GetObjectOptions{})
 	if err != nil {
-		if !errors.Is(err, io.EOF) {
-			r.log.V(5).Error(err, "Underlying read errored",
-				"size.current", r.currentSize+int64(n))
-		}
-		return n, err
+		return err
 	}
 
-	r.currentSize += int64(n)
-
-	var percentage int64
-	if r.totalSize > 0 {
-		percentage = r.currentSize * 100 / r.totalSize
-	}
-
-	r.log.V(5).Info("Read successful, progressing",
-		"size.current", r.currentSize,
-		"size.percentage", percentage)
-	return n, err
+	_, err = io.Copy(pwr, obj)
+	return err
 }
 
 func (c *Client) Put(ctx context.Context, key string, data io.Reader, size int64) error {
-	r := &progressReader{
-		underlying: data,
-		totalSize:  size,
-		log:        log.FromContext(ctx, "size.total", size).WithName("progressReader"),
+	r := &util.ProgressReader{
+		Underlying: data,
+		TotalSize:  size,
+		Log:        log.FromContext(ctx, "size.total", size).WithName("ProgressReader"),
 	}
 
 	_, err := c.s3cli.PutObject(ctx, c.bucketName, key, r, size, minio.PutObjectOptions{})
