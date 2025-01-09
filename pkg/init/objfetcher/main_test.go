@@ -17,8 +17,9 @@ package main
 import (
 	"testing"
 
-	"github.com/anza-labs/image-builder/internal/fetcherconfig"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/anza-labs/image-builder/internal/fetcherconfig"
 )
 
 const (

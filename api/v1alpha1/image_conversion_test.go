@@ -62,7 +62,7 @@ func TestConvertFromTo(t *testing.T) {
 						},
 					},
 					ObjFetcher: imagebuilderv1alpha2.Container{
-						Image:     "ghcr.io/anza-labs/image-builder:v0.1.0",
+						Image:     "ghcr.io/anza-labs/image-builder-init-objfetcher:v0.1.0",
 						Verbosity: 4,
 						Resources: corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
