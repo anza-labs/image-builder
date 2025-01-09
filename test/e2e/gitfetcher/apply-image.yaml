@@ -4,6 +4,12 @@ kind: Image
 metadata:
   name: test-image
 spec:
+  builder:
+    verbosity: 8
+  gitFetcher:
+    verbosity: 8
+  objFetcher:
+    verbosity: 8
   format: 'kernel+initrd'
   configuration: |
     kernel:

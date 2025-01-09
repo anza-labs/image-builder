@@ -64,6 +64,7 @@ func run(ctx context.Context, opts options) error {
 	var errs error
 	for _, fetcher := range cfg.Fetchers {
 		if fetcher.ObjFetcher == nil {
+			log.V(4).Info("Ignoring fetcher config, not an ObjFetcher")
 			continue
 		}
 
@@ -81,7 +82,10 @@ func run(ctx context.Context, opts options) error {
 }
 
 func runFetcher(ctx context.Context, cfg *fetcherconfig.ObjFetcher) error {
+	log := log.FromContext(ctx)
+
 	if cfg.KeysPath != "" {
+		log.V(1).Info("Loading keys", "path", cfg.KeysPath)
 		if err := loadKeys(cfg); err != nil {
 			return fmt.Errorf("failed to load keys: %w", err)
 		}
@@ -92,7 +96,10 @@ func runFetcher(ctx context.Context, cfg *fetcherconfig.ObjFetcher) error {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
 
+	log.V(1).Info("Saving objects", "path", cfg.KeysPath)
+
 	for key, file := range cfg.Keys {
+		log.V(4).Info("Saving object", "key", key, "file", file)
 		err := saveObject(ctx, c, key, file)
 		if err != nil {
 			return fmt.Errorf("failed to save object: %w", err)

@@ -4,6 +4,7 @@ kind: Image
 metadata:
   name: test-image
 spec:
+  builderVerbosity: 8
   format: 'kernel+initrd'
   configuration: |
     kernel:

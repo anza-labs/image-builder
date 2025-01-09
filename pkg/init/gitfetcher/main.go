@@ -74,6 +74,7 @@ func run(ctx context.Context, opts options) error {
 	var errs error
 	for _, fetcher := range cfg.Fetchers {
 		if fetcher.GitFetcher == nil {
+			log.V(4).Info("Ignoring fetcher config, not an GitFetcher")
 			continue
 		}
 
@@ -92,10 +93,14 @@ func run(ctx context.Context, opts options) error {
 }
 
 func runFetcher(ctx context.Context, cfg *fetcherconfig.GitFetcher) error {
+	log := log.FromContext(ctx)
+
 	c, err := newClient(cfg.CredentialsPath)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
+
+	log.V(1).Info("Cloning repository", "repo", cfg.Repository, "ref", cfg.Ref)
 
 	return c.Clone(ctx, cfg.Repository, cfg.Ref, cfg.MountPoint)
 }
