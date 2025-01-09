@@ -13,6 +13,9 @@
 // limitations under the License.
 
 // Package v1alpha1 contains API Schema definitions for the  v1alpha1 API group
+//
+// Deprecated: Due to breaking changes, v1alpha2 is a new default, and this version will be removed in upcoming releases.
+//
 // +kubebuilder:object:generate=true
 // +groupName=image-builder.anza-labs.dev
 package v1alpha1

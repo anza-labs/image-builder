@@ -1,0 +1,7 @@
+---
+apiVersion: image-builder.anza-labs.dev/v1alpha2
+kind: Image
+metadata:
+  name: test-image
+status:
+  ready: true

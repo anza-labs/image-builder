@@ -40,6 +40,7 @@ type Spec struct {
 
 type Storage interface {
 	Delete(ctx context.Context, key string) error
+	Get(ctx context.Context, key string, wr io.Writer) error
 	GetURL(ctx context.Context, key string) (string, error)
 	Put(ctx context.Context, key string, data io.Reader, size int64) error
 	Stat(ctx context.Context, key string) (bool, error)

@@ -31,6 +31,14 @@ func Container() string {
 	return "image-builder"
 }
 
+func InitCointainer(base string) string {
+	return DNSName(Truncate("%s", 63, base))
+}
+
 func ConfigMap(base, hash string) string {
 	return DNSName(Truncate("%s-%s", 63, base, hash))
+}
+
+func Volume(format string, args ...any) string {
+	return DNSName(Truncate(format, 63, args...))
 }

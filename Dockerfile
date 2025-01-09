@@ -1,6 +1,6 @@
-# Easy crosscomple toolkit
+# Easy crosscompile toolkit
 # hadolint ignore=DL3006
-FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
+FROM --platform=$BUILDPLATFORM docker.io/tonistiigi/xx:1.6.1 AS xx
 
 # Build the manager binary
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.23 AS builder

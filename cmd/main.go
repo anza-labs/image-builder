@@ -19,7 +19,8 @@ import (
 	"flag"
 	"os"
 
-	anzalabsdevv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
+	imagebuilderv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1" //nolint:staticcheck // deprecation only for users
+	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
 	"github.com/anza-labs/image-builder/internal/controller"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,7 +46,8 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(anzalabsdevv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(imagebuilderv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(imagebuilderv1alpha2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -144,6 +146,12 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Unable to create controller", "controller", "Image")
 		os.Exit(1)
+	}
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = (&imagebuilderv1alpha2.Image{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Image")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 
