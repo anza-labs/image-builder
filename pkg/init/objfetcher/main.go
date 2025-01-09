@@ -27,6 +27,7 @@ import (
 	"github.com/anza-labs/image-builder/internal/fetcherconfig"
 	"github.com/anza-labs/image-builder/internal/storage"
 	"github.com/anza-labs/image-builder/internal/util"
+
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -34,9 +35,7 @@ import (
 )
 
 type options struct {
-	K8sNamespace string
-	K8sName      string
-	Config       string
+	Config string
 }
 
 func main() {
@@ -45,11 +44,10 @@ func main() {
 	ctrl.SetLogger(klog.NewKlogr())
 
 	if err := run(signals.SetupSignalHandler(), options{
-		K8sNamespace: os.Getenv("K8S_NAMESPACE"),
-		K8sName:      os.Getenv("K8S_NAME"),
-		Config:       os.Getenv("FETCHER_CONFIG"),
+		Config: os.Getenv("FETCHER_CONFIG"),
 	}); err != nil {
 		klog.V(0).ErrorS(err, "Critical error while running")
+		os.Exit(1)
 	}
 }
 
@@ -109,7 +107,7 @@ func saveObject(ctx context.Context, client storage.Storage, key string, file fe
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %w", file.Path, err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck // best effort call
 
 	if err := client.Get(ctx, key, f); err != nil {
 		return fmt.Errorf("failed to fetch object with key %s: %w", key, err)
@@ -138,6 +136,10 @@ func loadKeys(cfg *fetcherconfig.ObjFetcher) error {
 		return fmt.Errorf("failed to read keys directory: %w", err)
 	}
 
+	if cfg.Keys == nil {
+		cfg.Keys = make(map[string]fetcherconfig.File)
+	}
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -145,7 +147,7 @@ func loadKeys(cfg *fetcherconfig.ObjFetcher) error {
 
 		completePath := filepath.Join(cfg.KeysPath, entry.Name())
 		if entry.Name() == "" || entry.Name() == "." || entry.Name() == ".." {
-			return fmt.Errorf("invalid file name: %s", entry.Name())
+			return fmt.Errorf("%w: %s", os.ErrInvalid, entry.Name())
 		}
 
 		data, err := os.ReadFile(completePath)

@@ -2,9 +2,9 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
-  name: conversion
+  name: gitfetcher
   labels:
-    area: 'conversion'
+    area: 'init'
 spec:
   concurrent: false
   timeouts:
@@ -33,7 +33,7 @@ spec:
         - create:
             file: ./apply-image.yaml
 
-    - name: Check if the conversion happened
+    - name: Wait for Image status to be ready and resources to be deployed
       try:
         - assert:
             timeout: 10m

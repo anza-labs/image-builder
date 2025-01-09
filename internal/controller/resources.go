@@ -187,7 +187,7 @@ func Job(image *imagebuilderv1alpha2.Image) (*batchv1.Job, error) {
 	initVolumeMounts = append(initVolumeMounts, corev1.VolumeMount{
 		Name:      fetcherCM,
 		ReadOnly:  true,
-		MountPath: "/etc/fetcher/config.json",
+		MountPath: "/etc/fetcher",
 	})
 
 	containers := []corev1.Container{
@@ -285,9 +285,7 @@ func Container(image *imagebuilderv1alpha2.Image, extraVolumeMounts ...corev1.Vo
 			fmt.Sprintf("--v=%d", verbosity),
 		},
 		Env: []corev1.EnvVar{
-			{Name: "K8S_NAME", ValueFrom: &corev1.EnvVarSource{
-				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
-			}},
+			{Name: "K8S_JOB_NAME", Value: image.Name},
 			{Name: "K8S_NAMESPACE", ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"},
 			}},
@@ -326,13 +324,7 @@ func InitCointainer(
 		VolumeMounts: volumeMounts,
 		Resources:    resources,
 		Env: []corev1.EnvVar{
-			{Name: "K8S_NAME", ValueFrom: &corev1.EnvVarSource{
-				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
-			}},
-			{Name: "K8S_NAMESPACE", ValueFrom: &corev1.EnvVarSource{
-				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"},
-			}},
-			{Name: "FETCHER_CONFIG", Value: "/config/fetcher.json"},
+			{Name: "FETCHER_CONFIG", Value: "/etc/fetcher/fetcher.json"},
 		},
 	}
 }

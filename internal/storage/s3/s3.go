@@ -21,9 +21,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/anza-labs/image-builder/internal/util"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+
+	"github.com/anza-labs/image-builder/internal/util"
 
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )

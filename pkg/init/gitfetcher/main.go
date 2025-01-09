@@ -22,12 +22,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/anza-labs/image-builder/internal/fetcherconfig"
-	"github.com/anza-labs/image-builder/internal/git"
-	"github.com/anza-labs/image-builder/internal/util"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+
+	"github.com/anza-labs/image-builder/internal/fetcherconfig"
+	"github.com/anza-labs/image-builder/internal/git"
+	"github.com/anza-labs/image-builder/internal/util"
+
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -38,10 +40,12 @@ const (
 	defaultUsername string = "gitfetcher"
 )
 
+var (
+	ErrEmptyPasswordPath = errors.New("empty password file path")
+)
+
 type options struct {
-	K8sNamespace string
-	K8sName      string
-	Config       string
+	Config string
 }
 
 func main() {
@@ -50,11 +54,10 @@ func main() {
 	ctrl.SetLogger(klog.NewKlogr())
 
 	if err := run(signals.SetupSignalHandler(), options{
-		K8sNamespace: os.Getenv("K8S_NAMESPACE"),
-		K8sName:      os.Getenv("K8S_NAME"),
-		Config:       os.Getenv("FETCHER_CONFIG"),
+		Config: os.Getenv("FETCHER_CONFIG"),
 	}); err != nil {
 		klog.V(0).ErrorS(err, "Critical error while running")
+		os.Exit(1)
 	}
 }
 
@@ -75,13 +78,13 @@ func run(ctx context.Context, opts options) error {
 		}
 
 		if err := runFetcher(ctx, fetcher.GitFetcher); err != nil {
-			log.V(1).Error(err, "New error occured while running fetcher", "mount_point", fetcher.GitFetcher)
+			log.V(1).Error(err, "New error occurred while running fetcher", "mount_point", fetcher.GitFetcher)
 			errs = errors.Join(errs, err)
 		}
 	}
 
 	if errs != nil {
-		return fmt.Errorf("one or more errors occured: %w", err)
+		return fmt.Errorf("one or more errors occurred: %w", err)
 	}
 
 	log.V(1).Info("Run completed successfully")
@@ -176,7 +179,7 @@ func usernameAndPassword(usernameFile, passwordFile string) (http.AuthMethod, er
 	}
 
 	if passwordFile == "" {
-		return nil, errors.New("empty password file path")
+		return nil, ErrEmptyPasswordPath
 	}
 
 	b, err := util.ReadFile(passwordFile)

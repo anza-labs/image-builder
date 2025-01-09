@@ -1308,6 +1308,11 @@ spec:
                               type: string
                           type: object
                           x-kubernetes-map-type: atomic
+                        ref:
+                          default: main
+                          description: Ref specifies the branch, tag, or commit hash
+                            to be used from the Git repository.
+                          type: string
                         repository:
                           description: Repository specifies the URL of the Git repository.
                           type: string

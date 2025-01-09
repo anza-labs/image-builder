@@ -26,7 +26,7 @@ func Load(path string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open config file: %w", err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck // best effort call
 
 	return LoadFrom(f)
 }

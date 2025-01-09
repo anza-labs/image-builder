@@ -29,14 +29,14 @@ const (
 )
 
 func ReadFile(path string) ([]byte, error) {
-	uf, err := os.Open(path)
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open %q file: %w", path, err)
 	}
-	defer uf.Close()
+	defer f.Close() //nolint:errcheck // best effort call
 
 	buf := new(bytes.Buffer)
-	_, err = io.Copy(buf, io.LimitReader(uf, defaultLimit))
+	_, err = io.Copy(buf, io.LimitReader(f, defaultLimit))
 	if err != nil {
 		return nil, fmt.Errorf("unable to read %q file: %w", path, err)
 	}

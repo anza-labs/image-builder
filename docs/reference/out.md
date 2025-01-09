@@ -214,6 +214,7 @@ _Appears in:_
 | Field | Description | Default | Validation |
 | --- | --- | --- | --- |
 | `repository` _string_ | Repository specifies the URL of the Git repository. |  |  |
+| `ref` _string_ | Ref specifies the branch, tag, or commit hash to be used from the Git repository. |  |  |
 | `credentials` _[LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#localobjectreference-v1-core)_ | Credentials specifies the credentials for accessing the repository.<br />Secret must be one of the following types:<br />	- "kubernetes.io/basic-auth" with "username" and "password" fields;<br />	- "kubernetes.io/ssh-auth" with "ssh-privatekey" field;<br />	- "Opaque" with "gitconfig" field. |  |  |
 
 

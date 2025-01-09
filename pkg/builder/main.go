@@ -57,7 +57,7 @@ type options struct {
 	OutputName         string
 	StorageCredentials string
 	K8sNamespace       string
-	K8sName            string
+	K8sJobName         string
 }
 
 func main() {
@@ -71,9 +71,10 @@ func main() {
 		StorageCredentials: os.Getenv("STORAGE_CREDENTIALS"),
 		OutputName:         os.Getenv("K8S_SECRET_NAME"),
 		K8sNamespace:       os.Getenv("K8S_NAMESPACE"),
-		K8sName:            os.Getenv("K8S_NAME"),
+		K8sJobName:         os.Getenv("K8S_JOB_NAME"),
 	}); err != nil {
 		klog.V(0).ErrorS(err, "Critical error while running")
+		os.Exit(1)
 	}
 }
 
@@ -138,7 +139,7 @@ func run(ctx context.Context, opts options) error {
 		}
 		defer f.Close() //nolint:errcheck // best effort call
 
-		objectKey := naming.Key(opts.K8sNamespace, opts.K8sName, opts.Format, o.Name)
+		objectKey := naming.Key(opts.K8sNamespace, opts.K8sJobName, opts.Format, o.Name)
 		log.V(1).Info("Uploading image to storage", "key", objectKey)
 		if err := stor.Put(ctx, objectKey, f, o.Size); err != nil {
 			return fmt.Errorf("failed to upload image to storage with key %s: %w", objectKey, err)

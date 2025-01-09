@@ -19,7 +19,7 @@ import (
 	"flag"
 	"os"
 
-	imagebuilderv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1"
+	imagebuilderv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1" //nolint:staticcheck // deprecation only for users
 	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
 	"github.com/anza-labs/image-builder/internal/controller"
 
