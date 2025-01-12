@@ -38,7 +38,7 @@ func (src *Image) ConvertTo(dstRaw conversion.Hub) error {
 	verbosity := src.Spec.BuilderVerbosity
 	resources := src.Spec.Resources
 
-	builderImage, err := imageFrom(srcImage, "image-builder")
+	builderImage, err := imageFrom(srcImage, "image-builder-linuxkit")
 	if err != nil {
 		return fmt.Errorf("container image conversion failed: %w", err)
 	}

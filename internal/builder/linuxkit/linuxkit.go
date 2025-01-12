@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package linuxkit
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 )
 
-type Builder struct {
+type Linuxkit struct {
 	linuxkit string
 }
 
@@ -34,7 +34,7 @@ type Output struct {
 	Name string
 }
 
-func New() (*Builder, error) {
+func New() (*Linuxkit, error) {
 	linuxkit, err := exec.LookPath("linuxkit")
 	if err != nil {
 		if !errors.Is(err, exec.ErrNotFound) {
@@ -43,7 +43,7 @@ func New() (*Builder, error) {
 		linuxkit = "/linuxkit"
 	}
 
-	return &Builder{
+	return &Linuxkit{
 		linuxkit: linuxkit,
 	}, nil
 }
@@ -63,7 +63,7 @@ func FilePathWalkDir(root string) ([]Output, error) {
 	return files, err
 }
 
-func (b *Builder) Build(ctx context.Context, format string, configPath string) ([]Output, error) {
+func (l *Linuxkit) Build(ctx context.Context, format string, configPath string) ([]Output, error) {
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, fmt.Errorf("unable to prepare output dir: %w", err)
@@ -71,7 +71,7 @@ func (b *Builder) Build(ctx context.Context, format string, configPath string) (
 
 	cmd := exec.CommandContext(
 		ctx,
-		b.linuxkit,
+		l.linuxkit,
 		"build",
 		"--format", format,
 		"--dir", dir,
