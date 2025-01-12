@@ -1,8 +1,6 @@
 # Image URL to use all building/pushing image targets
 REPOSITORY     ?= localhost:5005
 TAG            ?= dev-$(shell git describe --match='' --always --abbrev=6 --dirty)
-IMG_CONTROLLER ?= $(REPOSITORY)/image-builder-controller:$(TAG)
-IMG_BUILDER    ?= $(REPOSITORY)/image-builder:$(TAG)
 PLATFORM       ?= linux/$(shell go env GOARCH)
 CHAINSAW_ARGS  ?=
 
@@ -148,7 +146,7 @@ release: ## Runs the script that generates new release.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
-docker-build: docker-build-controller docker-build-builder docker-build-gitfetcher docker-build-objfetcher ## Build all docker images.
+docker-build: docker-build-controller docker-build-builder-linuxkit docker-build-init-gitfetcher docker-build-init-objfetcher ## Build all docker images.
 
 .PHONY: docker-build-controller
 docker-build-controller: ## Build docker image with the controller.
@@ -157,39 +155,37 @@ docker-build-controller: ## Build docker image with the controller.
 		--file=./Dockerfile \
 		--build-arg=VERSION=$(TAG) \
 		--build-arg=OCI_REPOSITORY=$(REPOSITORY) \
-		--tag=${IMG_CONTROLLER} .
+		--tag=$(REPOSITORY)/image-builder-controller:$(TAG) .
 
-.PHONY: docker-build-builder
-docker-build-builder: ## Build docker image with the builder.
+docker-build-builder-%: ## Build docker image for the builder.
 	$(CONTAINER_TOOL) build \
 		--platform=${PLATFORM} \
-		--file=./pkg/builder/Dockerfile \
-		--tag=${IMG_BUILDER} .
+		--file=./pkg/builder/$*/Dockerfile \
+		--tag=$(REPOSITORY)/image-builder-$*:$(TAG) .
 
-docker-build-%: ## Build docker image for init container.
+docker-build-init-%: ## Build docker image for init container.
 	$(CONTAINER_TOOL) build \
 		--platform=${PLATFORM} \
 		--file=./pkg/init/$*/Dockerfile \
 		--tag=$(REPOSITORY)/image-builder-init-$*:$(TAG) .
 
 .PHONY: docker-push
-docker-push: docker-push-controller docker-push-builder docker-push-gitfetcher docker-push-objfetcher ## Push all docker images.
+docker-push: docker-push-controller docker-push-builder-linuxkit docker-push-init-gitfetcher docker-push-init-objfetcher ## Push all docker images.
 
 .PHONY: docker-push-controller
 docker-push-controller: ## Push docker image with the controller.
-	$(CONTAINER_TOOL) push ${IMG_CONTROLLER}
+	$(CONTAINER_TOOL) push $(REPOSITORY)/image-builder-controller:$(TAG)
 
-.PHONY: docker-push-builder
-docker-push-builder: ## Push docker image with the builder.
-	$(CONTAINER_TOOL) push ${IMG_BUILDER}
+docker-push-builder-%: ## Push docker image for the builder.
+	$(CONTAINER_TOOL) push $(REPOSITORY)/image-builder-$*:$(TAG)
 
-docker-push-%: ## Push docker image for init container.
+docker-push-init-%: ## Push docker image for init container.
 	$(CONTAINER_TOOL) push $(REPOSITORY)/image-builder-init-$*:$(TAG)
 
 .PHONY: build-installer
 build-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
 	mkdir -p dist
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG_CONTROLLER}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(REPOSITORY)/image-builder-controller:$(TAG)
 	$(KUSTOMIZE) build config/default > dist/install.yaml
 
 ##@ Documentation
@@ -220,7 +216,7 @@ cluster-reset: kind ctlptl
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG_CONTROLLER}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(REPOSITORY)/image-builder-controller:$(TAG)
 	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
 
 .PHONY: undeploy

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/anza-labs/image-builder/internal/builder"
+	"github.com/anza-labs/image-builder/internal/builder/linuxkit"
 	"github.com/anza-labs/image-builder/internal/naming"
 	"github.com/anza-labs/image-builder/internal/storage"
 
@@ -111,7 +111,7 @@ func run(ctx context.Context, opts options) error {
 	}
 
 	log.V(1).Info("Initializing builder")
-	bld, err := builder.New()
+	bld, err := linuxkit.New()
 	if err != nil {
 		return fmt.Errorf("failed to initialize builder: %w", err)
 	}

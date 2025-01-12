@@ -31,7 +31,7 @@ COPY internal/ internal/
 
 # Build
 ENV CGO_ENABLED=0
-RUN xx-go build -trimpath -a -o builder pkg/builder/main.go && \
+RUN xx-go build -trimpath -a -o builder pkg/builder/linuxkit/main.go && \
     xx-verify builder
 
 # Use distroless as minimal base image to package the builder binary

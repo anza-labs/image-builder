@@ -24,7 +24,6 @@ COPY hack/ hack/
 COPY version/ version/
 COPY cmd/main.go cmd/main.go
 COPY api/ api/
-COPY pkg/ pkg/
 COPY internal/ internal/
 
 # Build
