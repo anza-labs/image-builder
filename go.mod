@@ -27,7 +27,7 @@ require (
 	github.com/golangci/golangci-lint v1.63.4
 	github.com/google/addlicense v1.1.1
 	github.com/kyverno/chainsaw v0.2.12
-	github.com/tilt-dev/ctlptl v0.8.37
+	github.com/tilt-dev/ctlptl v0.8.38
 	golang.stackrox.io/kube-linter v0.7.1
 	sigs.k8s.io/controller-tools v0.17.0
 	sigs.k8s.io/kind v0.26.0
@@ -415,7 +415,7 @@ require (
 	honnef.co/go/tools v0.5.1 // indirect
 	k8s.io/apiextensions-apiserver v0.32.0 // indirect
 	k8s.io/apiserver v0.32.0 // indirect
-	k8s.io/cli-runtime v0.31.1 // indirect
+	k8s.io/cli-runtime v0.32.1 // indirect
 	k8s.io/component-base v0.32.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
 	knative.dev/pkg v0.0.0-20240805063731-c88d5dad9653 // indirect
