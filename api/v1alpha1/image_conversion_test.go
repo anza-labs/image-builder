@@ -44,7 +44,7 @@ func TestConvertFromTo(t *testing.T) {
 				},
 				Spec: imagebuilderv1alpha2.ImageSpec{
 					Builder: imagebuilderv1alpha2.Container{
-						Image:     "ghcr.io/anza-labs/image-builder:v0.1.0",
+						Image:     "ghcr.io/anza-labs/image-builder-linuxkit:v0.1.0",
 						Verbosity: 4,
 						Resources: corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
@@ -89,7 +89,7 @@ func TestConvertFromTo(t *testing.T) {
 					Namespace: "test",
 				},
 				Spec: ImageSpec{
-					BuilderImage:     "ghcr.io/anza-labs/image-builder:v0.1.0",
+					BuilderImage:     "ghcr.io/anza-labs/image-builder-linuxkit:v0.1.0",
 					BuilderVerbosity: 4,
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
@@ -144,22 +144,22 @@ func TestImageFrom(t *testing.T) {
 			expectedOut:   "",
 		},
 		"valid image": {
-			v1alpha1Image: "image-builder:latest",
+			v1alpha1Image: "image-builder-linuxkit:latest",
 			targetImage:   "image-builder-init-objfetcher",
 			expectedOut:   "docker.io/library/image-builder-init-objfetcher:latest",
 		},
 		"valid image with tag": {
-			v1alpha1Image: "ghcr.io/anza-labs/image-builder:latest",
+			v1alpha1Image: "ghcr.io/anza-labs/image-builder-linuxkit:latest",
 			targetImage:   "image-builder-init-objfetcher",
 			expectedOut:   "ghcr.io/anza-labs/image-builder-init-objfetcher:latest",
 		},
 		"valid image without registry": {
-			v1alpha1Image: "anza-labs/image-builder:latest",
+			v1alpha1Image: "anza-labs/image-builder-linuxkit:latest",
 			targetImage:   "image-builder-init-objfetcher",
 			expectedOut:   "docker.io/anza-labs/image-builder-init-objfetcher:latest",
 		},
 		"valid image without local registry": {
-			v1alpha1Image: "localhost:5005/anza-labs/image-builder:latest",
+			v1alpha1Image: "localhost:5005/anza-labs/image-builder-linuxkit:latest",
 			targetImage:   "image-builder-init-objfetcher",
 			expectedOut:   "localhost:5005/anza-labs/image-builder-init-objfetcher:latest",
 		},
@@ -169,7 +169,7 @@ func TestImageFrom(t *testing.T) {
 			expectedOut:   "ghcr.io/anza-labs/image-builder-init-objfetcher@sha256:008b026f11c0b5653d564d0c9877a116770f06dfbdb36ca75c46fd593d863cbc",
 		},
 		"valid image with tag and digest": {
-			v1alpha1Image: "ghcr.io/anza-labs/image-builder:v0.1.2@sha256:008b026f11c0b5653d564d0c9877a116770f06dfbdb36ca75c46fd593d863cbc",
+			v1alpha1Image: "ghcr.io/anza-labs/image-builder-linuxkit:v0.1.2@sha256:008b026f11c0b5653d564d0c9877a116770f06dfbdb36ca75c46fd593d863cbc",
 			targetImage:   "image-builder-init-objfetcher",
 			expectedOut:   "ghcr.io/anza-labs/image-builder-init-objfetcher:v0.1.2@sha256:008b026f11c0b5653d564d0c9877a116770f06dfbdb36ca75c46fd593d863cbc",
 		},
