@@ -1,4 +1,4 @@
-// Copyright 2024 anza-labs contributors.
+// Copyright 2024-2025 anza-labs contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/anza-labs/image-builder/internal/storage/azure"
 	"github.com/anza-labs/image-builder/internal/storage/s3"
 )
 
@@ -32,10 +33,11 @@ type Config struct {
 }
 
 type Spec struct {
-	BucketName         string       `json:"bucketName"`
-	AuthenticationType string       `json:"authenticationType"`
-	Protocols          []string     `json:"protocols"`
-	SecretS3           *s3.SecretS3 `json:"secretS3,omitempty"`
+	BucketName         string             `json:"bucketName"`
+	AuthenticationType string             `json:"authenticationType"`
+	Protocols          []string           `json:"protocols"`
+	SecretS3           *s3.SecretS3       `json:"secretS3,omitempty"`
+	SecretAzure        *azure.SecretAzure `json:"secretAzure,omitempty"`
 }
 
 type Storage interface {
@@ -47,18 +49,34 @@ type Storage interface {
 }
 
 func New(config Config, ssl bool) (Storage, error) {
-	if !slices.ContainsFunc(config.Spec.Protocols, func(s string) bool { return strings.EqualFold(s, "s3") }) {
-		return nil, fmt.Errorf("%w: invalid protocol", ErrInvalidConfig)
+	// default to S3
+	if slices.ContainsFunc(config.Spec.Protocols, func(s string) bool { return strings.EqualFold(s, "s3") }) {
+		if !strings.EqualFold(config.Spec.AuthenticationType, "key") {
+			return nil, fmt.Errorf("%w: invalid authentication type", ErrInvalidConfig)
+		}
+
+		s3secret := config.Spec.SecretS3
+		if s3secret == nil {
+			return nil, fmt.Errorf("%w: s3 secret missing", ErrInvalidConfig)
+		}
+
+		return s3.New(config.Spec.BucketName, *s3secret, ssl)
 	}
 
-	if !strings.EqualFold(config.Spec.AuthenticationType, "key") {
-		return nil, fmt.Errorf("%w: invalid authentication type", ErrInvalidConfig)
+	// optionally Azure Blob
+	if slices.ContainsFunc(config.Spec.Protocols, func(s string) bool { return strings.EqualFold(s, "azure") }) {
+		if !strings.EqualFold(config.Spec.AuthenticationType, "key") {
+			return nil, fmt.Errorf("%w: invalid authentication type", ErrInvalidConfig)
+		}
+
+		azureSecret := config.Spec.SecretAzure
+		if azureSecret == nil {
+			return nil, fmt.Errorf("%w: azure secret missing", ErrInvalidConfig)
+		}
+
+		return azure.New(config.Spec.BucketName, *azureSecret)
 	}
 
-	s3secret := config.Spec.SecretS3
-	if s3secret == nil {
-		return nil, fmt.Errorf("%w: s3 secret missing", ErrInvalidConfig)
-	}
+	return nil, fmt.Errorf("%w: invalid protocol", ErrInvalidConfig)
 
-	return s3.New(config.Spec.BucketName, *config.Spec.SecretS3, ssl)
 }
