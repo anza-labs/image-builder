@@ -472,9 +472,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#example-configuration" class="md-nav__link">
+  <a href="#example-configuration-s3" class="md-nav__link">
     <span class="md-ellipsis">
-      Example Configuration
+      Example Configuration (S3)
     </span>
   </a>
   
@@ -613,9 +613,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#example-configuration" class="md-nav__link">
+  <a href="#example-configuration-s3" class="md-nav__link">
     <span class="md-ellipsis">
-      Example Configuration
+      Example Configuration (S3)
     </span>
   </a>
   
@@ -660,14 +660,19 @@
 <p>The following example demonstrates how to create a minimal image specification using the Image Builder API. This setup leverages the <a href="https://github.com/kubernetes-sigs/container-object-storage-interface">Container Object Storage Interface (COSI)</a> for managing bucket credentials.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You can use any of the object storage providers, that support S3 protocol and has <a href="https://github.com/kubernetes-sigs/container-object-storage-interface">COSI (v1alpha1)</a> driver.</p>
+<p>You can use any of the object storage providers, that support S3 or Azure protocol and have <a href="https://github.com/kubernetes-sigs/container-object-storage-interface">COSI (v1alpha1)</a> driver.</p>
 <p>Example of such drivers are:</p>
 <ul>
+<li><a href="https://github.com/Azure/azure-cosi-driver">Azure COSI Driver</a></li>
 <li><a href="https://github.com/ceph/ceph-cosi">Ceph COSI</a></li>
 <li><a href="https://github.com/linode/linode-cosi-driver">Linode COSI Driver</a></li>
 </ul>
+<div class="admonition danger">
+<p class="admonition-title">Danger</p>
+<p>Azure support is experimental and has not been officially tested.</p>
 </div>
-<h3 id="example-configuration">Example Configuration</h3>
+</div>
+<h3 id="example-configuration-s3">Example Configuration (S3)</h3>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">image-builder.anza-labs.dev/v1alpha2</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Image</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">metadata</span><span class="p">:</span>
