@@ -9,14 +9,18 @@ The following example demonstrates how to create a minimal image specification u
 
 
 !!! note
-    You can use any of the object storage providers, that support S3 protocol and has [COSI (v1alpha1)][cosi] driver.
+    You can use any of the object storage providers, that support S3 or Azure protocol and have [COSI (v1alpha1)][cosi] driver.
 
     Example of such drivers are:
 
+      * [Azure COSI Driver](https://github.com/Azure/azure-cosi-driver)
       * [Ceph COSI](https://github.com/ceph/ceph-cosi)
       * [Linode COSI Driver](https://github.com/linode/linode-cosi-driver)
 
-### Example Configuration
+    !!! danger
+        Azure support is experimental and has not been officially tested.
+
+### Example Configuration (S3)
 
 ```yaml
 apiVersion: image-builder.anza-labs.dev/v1alpha2

@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -148,7 +149,9 @@ func run(ctx context.Context, opts options) error {
 		log.V(1).Info("Generating URL for object", "key", objectKey)
 		url, err := stor.GetURL(ctx, objectKey)
 		if err != nil {
-			return fmt.Errorf("failed to generate URL for object key %s: %w", objectKey, err)
+			if !errors.Is(err, errors.ErrUnsupported) {
+				return fmt.Errorf("failed to generate URL for object key %s: %w", objectKey, err)
+			}
 		}
 
 		if outputs.Data == nil {
@@ -157,7 +160,11 @@ func run(ctx context.Context, opts options) error {
 		}
 
 		log.V(6).Info("New data added to secret", "key", objectKey, "url", url)
-		outputs.Data[naming.DNSName(o.Name)] = []byte(fmt.Sprintf("%s = %s", objectKey, url))
+		if url != "" {
+			outputs.Data[naming.DNSName(o.Name)] = []byte(fmt.Sprintf("%s = %s", objectKey, url))
+		} else {
+			outputs.Data[naming.DNSName(o.Name)] = []byte(objectKey)
+		}
 	}
 
 	log.V(1).Info("Creating or updating Kubernetes secret", "secret", klog.KObj(outputs))
