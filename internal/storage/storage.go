@@ -52,7 +52,7 @@ func New(config Config, ssl bool) (Storage, error) {
 	// default to S3
 	if slices.ContainsFunc(config.Spec.Protocols, func(s string) bool { return strings.EqualFold(s, "s3") }) {
 		if !strings.EqualFold(config.Spec.AuthenticationType, "key") {
-			return nil, fmt.Errorf("%w: invalid authentication type", ErrInvalidConfig)
+			return nil, fmt.Errorf("%w: invalid authentication type for s3", ErrInvalidConfig)
 		}
 
 		s3secret := config.Spec.SecretS3
@@ -66,7 +66,7 @@ func New(config Config, ssl bool) (Storage, error) {
 	// optionally Azure Blob
 	if slices.ContainsFunc(config.Spec.Protocols, func(s string) bool { return strings.EqualFold(s, "azure") }) {
 		if !strings.EqualFold(config.Spec.AuthenticationType, "key") {
-			return nil, fmt.Errorf("%w: invalid authentication type", ErrInvalidConfig)
+			return nil, fmt.Errorf("%w: invalid authentication type for azure", ErrInvalidConfig)
 		}
 
 		azureSecret := config.Spec.SecretAzure
@@ -77,6 +77,5 @@ func New(config Config, ssl bool) (Storage, error) {
 		return azure.New(config.Spec.BucketName, *azureSecret)
 	}
 
-	return nil, fmt.Errorf("%w: invalid protocol", ErrInvalidConfig)
-
+	return nil, fmt.Errorf("%w: invalid protocol (%v)", ErrInvalidConfig, config.Spec.Protocols)
 }
