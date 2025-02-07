@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -34,18 +33,13 @@ type Client struct {
 	containerName string
 }
 
-func onlyError[T any](_ T, err error) error {
-	return err
-}
-
 type SecretAzure struct {
 	AccessToken     string    `json:"accessToken"`
 	ExpiryTimestamp time.Time `json:"expiryTimeStamp"`
 }
 
 func New(containerName string, azureSecret SecretAzure) (*Client, error) {
-	// TODO: construct service URL and azcore.TokenCredential from AccessToken
-	azCli, err := azblob.NewClient("", nil, nil)
+	azCli, err := azblob.NewClientWithNoCredential(azureSecret.AccessToken, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create client: %w", err)
 	}
@@ -58,7 +52,6 @@ func New(containerName string, azureSecret SecretAzure) (*Client, error) {
 
 func (c *Client) Stat(ctx context.Context, blobName string) (bool, error) {
 	pager := c.azCli.NewListBlobsFlatPager(c.containerName, nil)
-
 	for pager.More() {
 		page, err := pager.NextPage(ctx)
 		if err != nil {
@@ -74,16 +67,18 @@ func (c *Client) Stat(ctx context.Context, blobName string) (bool, error) {
 			if item == nil || item.Name == nil {
 				continue
 			}
-			if strings.Contains(*item.Name, blobName) {
+			if *item.Name == blobName {
 				return true, nil
 			}
 		}
 	}
+
 	return false, nil
 }
 
 func (c *Client) Delete(ctx context.Context, blobName string) error {
-	return onlyError(c.azCli.DeleteBlob(ctx, c.containerName, blobName, nil))
+	_, err := c.azCli.DeleteBlob(ctx, c.containerName, blobName, nil)
+	return err
 }
 
 func (c *Client) Get(ctx context.Context, blobName string, wr io.Writer) error {
