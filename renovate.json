@@ -16,6 +16,7 @@
   ],
   "customManagers": [
     {
+      "customType": "regex",
       "fileMatch": [
         "^Makefile$"
       ],
