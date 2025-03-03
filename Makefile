@@ -243,17 +243,37 @@ GOLANGCI_LINT  ?= $(LOCALBIN)/golangci-lint
 MC             ?= $(LOCALBIN)/mc
 
 ## Tool Versions
-ADDLICENSE_VERSION       ?= $(shell grep 'github.com/google/addlicense '       ./go.mod | cut -d ' ' -f 2)
-CHAINSAW_VERSION         ?= $(shell grep 'github.com/kyverno/chainsaw '        ./go.mod | cut -d ' ' -f 2)
-CERT_MANAGER_VERSION     ?= v1.16.2
-CONTROLLER_TOOLS_VERSION ?= $(shell grep 'sigs.k8s.io/controller-tools '       ./go.mod | cut -d ' ' -f 2)
-CRD_REF_DOCS_VERSION     ?= $(shell grep 'github.com/elastic/crd-ref-docs '    ./go.mod | cut -d ' ' -f 2)
-CTLPTL_VERSION           ?= $(shell grep 'github.com/tilt-dev/ctlptl '         ./go.mod | cut -d ' ' -f 2)
-GOLANGCI_LINT_VERSION    ?= $(shell grep 'github.com/golangci/golangci-lint '  ./go.mod | cut -d ' ' -f 2)
-KIND_VERSION             ?= $(shell grep 'sigs.k8s.io/kind '                   ./go.mod | cut -d ' ' -f 2)
-KUBE_LINTER_VERSION      ?= $(shell grep 'golang.stackrox.io/kube-linter '     ./go.mod | cut -d ' ' -f 2)
-KUSTOMIZE_VERSION        ?= $(shell grep 'sigs.k8s.io/kustomize/kustomize/v5 ' ./go.mod | cut -d ' ' -f 2)
-MC_VERSION               ?= latest
+# renovate: datasource=github-tags depName=google/addlicense
+ADDLICENSE_VERSION ?= v1.1.1
+
+# renovate: datasource=github-tags depName=kyverno/chainsaw
+CHAINSAW_VERSION ?= v0.2.12
+
+# renovate: datasource=github-tags depName=cert-manager/cert-manager
+CERT_MANAGER_VERSION ?= v1.16.2
+
+# renovate: datasource=github-tags depName=kubernetes-sigs/controller-tools
+CONTROLLER_TOOLS_VERSION ?= v0.17.2
+
+# renovate: datasource=github-tags depName=elastic/crd-ref-docs
+CRD_REF_DOCS_VERSION ?= v0.1.0
+
+# renovate: datasource=github-tags depName=tilt-dev/ctlptl
+CTLPTL_VERSION ?= v0.8.39
+
+# renovate: datasource=github-tags depName=golangci/golangci-lint
+GOLANGCI_LINT_VERSION ?= v1.63.4
+
+# renovate: datasource=github-tags depName=kubernetes-sigs/kind
+KIND_VERSION ?= v0.27.0
+
+# renovate: datasource=github-tags depName=stackrox/kube-linter
+KUBE_LINTER_VERSION ?= v0.7.1
+
+# renovate: datasource=github-tags depName=kubernetes-sigs/kustomize
+KUSTOMIZE_VERSION ?= v5.6.0
+
+MC_VERSION ?= latest
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)-$(ADDLICENSE_VERSION) ## Download addlicense locally if necessary.
