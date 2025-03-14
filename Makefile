@@ -84,7 +84,7 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes.
 
 .PHONY: lint-manifests
 lint-manifests: kustomize kube-linter ## Run kube-linter on Kubernetes manifests.
-	$(KUSTOMIZE) build config/default |\
+	$(KUSTOMIZE) build config/default/manager |\
 		$(KUBE_LINTER) lint --config=./config/.kube-linter.yaml -
 
 .PHONY: hadolint
@@ -184,8 +184,8 @@ docker-push-init-%: ## Push docker image for init container.
 .PHONY: build-installer
 build-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
 	mkdir -p dist
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(REPOSITORY)/image-builder-controller:$(TAG)
-	$(KUSTOMIZE) build config/default > dist/install.yaml
+	cd config/default/manager && $(KUSTOMIZE) edit set image controller=$(REPOSITORY)/image-builder-controller:$(TAG)
+	$(KUSTOMIZE) build config/default/manager > dist/install.yaml
 
 ##@ Documentation
 
@@ -215,12 +215,12 @@ cluster-reset: kind ctlptl
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(REPOSITORY)/image-builder-controller:$(TAG)
-	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
+	cd config/default/manager && $(KUSTOMIZE) edit set image controller=$(REPOSITORY)/image-builder-controller:$(TAG)
+	$(KUSTOMIZE) build config/default/manager | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
 undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/default/manager | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Dependencies
 
