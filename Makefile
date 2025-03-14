@@ -84,7 +84,7 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes.
 
 .PHONY: lint-manifests
 lint-manifests: kustomize kube-linter ## Run kube-linter on Kubernetes manifests.
-	$(KUSTOMIZE) build config/default |\
+	$(KUSTOMIZE) build config/default/manager |\
 		$(KUBE_LINTER) lint --config=./config/.kube-linter.yaml -
 
 .PHONY: hadolint
@@ -184,8 +184,8 @@ docker-push-init-%: ## Push docker image for init container.
 .PHONY: build-installer
 build-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment.
 	mkdir -p dist
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(REPOSITORY)/image-builder-controller:$(TAG)
-	$(KUSTOMIZE) build config/default > dist/install.yaml
+	cd config/default/manager && $(KUSTOMIZE) edit set image controller=$(REPOSITORY)/image-builder-controller:$(TAG)
+	$(KUSTOMIZE) build config/default/manager > dist/install.yaml
 
 ##@ Documentation
 
@@ -215,12 +215,12 @@ cluster-reset: kind ctlptl
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(REPOSITORY)/image-builder-controller:$(TAG)
-	$(KUSTOMIZE) build config/default | $(KUBECTL) apply -f -
+	cd config/default/manager && $(KUSTOMIZE) edit set image controller=$(REPOSITORY)/image-builder-controller:$(TAG)
+	$(KUSTOMIZE) build config/default/manager | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
 undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/default/manager | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Dependencies
 
@@ -243,17 +243,37 @@ GOLANGCI_LINT  ?= $(LOCALBIN)/golangci-lint
 MC             ?= $(LOCALBIN)/mc
 
 ## Tool Versions
-ADDLICENSE_VERSION       ?= $(shell grep 'github.com/google/addlicense '       ./go.mod | cut -d ' ' -f 2)
-CHAINSAW_VERSION         ?= $(shell grep 'github.com/kyverno/chainsaw '        ./go.mod | cut -d ' ' -f 2)
-CERT_MANAGER_VERSION     ?= v1.16.2
-CONTROLLER_TOOLS_VERSION ?= $(shell grep 'sigs.k8s.io/controller-tools '       ./go.mod | cut -d ' ' -f 2)
-CRD_REF_DOCS_VERSION     ?= $(shell grep 'github.com/elastic/crd-ref-docs '    ./go.mod | cut -d ' ' -f 2)
-CTLPTL_VERSION           ?= $(shell grep 'github.com/tilt-dev/ctlptl '         ./go.mod | cut -d ' ' -f 2)
-GOLANGCI_LINT_VERSION    ?= $(shell grep 'github.com/golangci/golangci-lint '  ./go.mod | cut -d ' ' -f 2)
-KIND_VERSION             ?= $(shell grep 'sigs.k8s.io/kind '                   ./go.mod | cut -d ' ' -f 2)
-KUBE_LINTER_VERSION      ?= $(shell grep 'golang.stackrox.io/kube-linter '     ./go.mod | cut -d ' ' -f 2)
-KUSTOMIZE_VERSION        ?= $(shell grep 'sigs.k8s.io/kustomize/kustomize/v5 ' ./go.mod | cut -d ' ' -f 2)
-MC_VERSION               ?= latest
+# renovate: datasource=github-tags depName=google/addlicense
+ADDLICENSE_VERSION ?= v1.1.1
+
+# renovate: datasource=github-tags depName=kyverno/chainsaw
+CHAINSAW_VERSION ?= v0.2.12
+
+# renovate: datasource=github-tags depName=cert-manager/cert-manager
+CERT_MANAGER_VERSION ?= v1.17.1
+
+# renovate: datasource=github-tags depName=kubernetes-sigs/controller-tools
+CONTROLLER_TOOLS_VERSION ?= v0.17.2
+
+# renovate: datasource=github-tags depName=elastic/crd-ref-docs
+CRD_REF_DOCS_VERSION ?= v0.1.0
+
+# renovate: datasource=github-tags depName=tilt-dev/ctlptl
+CTLPTL_VERSION ?= v0.8.39
+
+# renovate: datasource=github-tags depName=golangci/golangci-lint
+GOLANGCI_LINT_VERSION ?= v1.64.7
+
+# renovate: datasource=github-tags depName=kubernetes-sigs/kind
+KIND_VERSION ?= v0.27.0
+
+# renovate: datasource=github-tags depName=stackrox/kube-linter
+KUBE_LINTER_VERSION ?= v0.7.2
+
+# renovate: datasource=github-tags depName=kubernetes-sigs/kustomize
+KUSTOMIZE_VERSION ?= v5.6.0
+
+MC_VERSION ?= latest
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)-$(ADDLICENSE_VERSION) ## Download addlicense locally if necessary.
@@ -283,7 +303,7 @@ $(CTLPTL)-$(CTLPTL_VERSION): $(LOCALBIN)
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT)-$(GOLANGCI_LINT_VERSION) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT)-$(GOLANGCI_LINT_VERSION): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+	./hack/install-golangci-lint.sh $(LOCALBIN) $(GOLANGCI_LINT) $(GOLANGCI_LINT_VERSION)
 
 .PHONY: kind
 kind: $(KIND)-$(KIND_VERSION) ## Download kind locally if necessary.
