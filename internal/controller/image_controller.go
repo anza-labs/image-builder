@@ -79,7 +79,7 @@ func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	// Handle finalizer logic
-	if image.ObjectMeta.DeletionTimestamp.IsZero() {
+	if image.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(image, imageFinalizer) {
 			log.V(3).Info("Adding finalizer")
 			controllerutil.AddFinalizer(image, imageFinalizer)
