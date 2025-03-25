@@ -345,14 +345,14 @@ func NewVolumeFrom(data imagebuilderv1alpha2.AdditionalData) volumeOpts {
 		},
 	}
 
-	if data.DataSource.Bucket != nil {
+	if data.Bucket != nil {
 		source = corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{
 				Medium: "",
 			},
 		}
 
-		if data.DataSource.Bucket.ItemsSecret != nil {
+		if data.Bucket.ItemsSecret != nil {
 			items := naming.Volume("%s-%s", data.Name, "items")
 
 			vo.volumes = append(vo.volumes, corev1.Volume{
@@ -384,13 +384,13 @@ func NewVolumeFrom(data imagebuilderv1alpha2.AdditionalData) volumeOpts {
 		})
 	}
 
-	if data.DataSource.ConfigMap != nil {
+	if data.ConfigMap != nil {
 		source = corev1.VolumeSource{
-			ConfigMap: data.DataSource.ConfigMap,
+			ConfigMap: data.ConfigMap,
 		}
 	}
 
-	if data.DataSource.GitRepository != nil {
+	if data.GitRepository != nil {
 		source = corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{
 				Medium: "",
@@ -418,21 +418,21 @@ func NewVolumeFrom(data imagebuilderv1alpha2.AdditionalData) volumeOpts {
 		}
 	}
 
-	if data.DataSource.Image != nil {
+	if data.Image != nil {
 		source = corev1.VolumeSource{
-			Image: data.DataSource.Image,
+			Image: data.Image,
 		}
 	}
 
-	if data.DataSource.Secret != nil {
+	if data.Secret != nil {
 		source = corev1.VolumeSource{
-			Secret: data.DataSource.Secret,
+			Secret: data.Secret,
 		}
 	}
 
-	if data.DataSource.Volume != nil {
+	if data.Volume != nil {
 		source = corev1.VolumeSource{
-			PersistentVolumeClaim: data.DataSource.Volume,
+			PersistentVolumeClaim: data.Volume,
 		}
 	}
 
@@ -455,19 +455,19 @@ func mode(m *int32) int32 {
 func NewConfigMapEntryFrom(data imagebuilderv1alpha2.AdditionalData) *fetcherconfig.Fetcher {
 	config := &fetcherconfig.Fetcher{}
 
-	if data.DataSource.Bucket != nil {
+	if data.Bucket != nil {
 		objCreds := naming.Volume("%s-%s", data.Name, "objcreds")
 		config.ObjFetcher = &fetcherconfig.ObjFetcher{
 			MountPoint:      data.VolumeMountPoint,
 			CredentialsPath: filepath.Join("/etc/objfetcher", objCreds),
 		}
 
-		if data.DataSource.Bucket.ItemsSecret != nil {
+		if data.Bucket.ItemsSecret != nil {
 			items := naming.Volume("%s-%s", data.Name, "items")
 			config.ObjFetcher.KeysPath = filepath.Join("/etc/objfetcher", items)
 		}
 
-		for _, kv := range data.DataSource.Bucket.Items {
+		for _, kv := range data.Bucket.Items {
 			if config.ObjFetcher.Keys == nil {
 				config.ObjFetcher.Keys = make(map[string]fetcherconfig.File)
 			}
@@ -480,13 +480,13 @@ func NewConfigMapEntryFrom(data imagebuilderv1alpha2.AdditionalData) *fetchercon
 		return config
 	}
 
-	if data.DataSource.GitRepository != nil {
+	if data.GitRepository != nil {
 		gitCreds := naming.Volume("%s-%s", data.Name, "gitcreds")
 		config.GitFetcher = &fetcherconfig.GitFetcher{
 			MountPoint:      data.VolumeMountPoint,
 			CredentialsPath: filepath.Join("/etc/gitfetcher", gitCreds),
-			Repository:      data.DataSource.GitRepository.Repository,
-			Ref:             data.DataSource.GitRepository.Ref,
+			Repository:      data.GitRepository.Repository,
+			Ref:             data.GitRepository.Ref,
 		}
 
 		return config
