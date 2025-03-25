@@ -8,7 +8,7 @@ ENV CGO_ENABLED=0
 
 # renovate: datasource=go depName=github.com/linuxkit/linuxkit
 ARG VERSION=v0.0.0-20241001125717-ad95c6fc2e48
-RUN go install github.com/linuxkit/linuxkit/src/cmd/linuxkit@${LINXUKIT_VERSION}
+RUN go install github.com/linuxkit/linuxkit/src/cmd/linuxkit@${VERSION}
 
 # Build the manager binary
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.24 AS builder
