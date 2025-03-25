@@ -66,6 +66,8 @@ rules:
   - image-builder.anza-labs.dev
   resources:
   - images
+  - linuxkits
+  - mkosis
   verbs:
   - create
   - delete
@@ -78,12 +80,16 @@ rules:
   - image-builder.anza-labs.dev
   resources:
   - images/finalizers
+  - linuxkits/finalizers
+  - mkosis/finalizers
   verbs:
   - update
 - apiGroups:
   - image-builder.anza-labs.dev
   resources:
   - images/status
+  - linuxkits/status
+  - mkosis/status
   verbs:
   - get
   - patch

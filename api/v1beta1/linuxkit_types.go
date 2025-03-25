@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1alpha2
+package v1beta1
 
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ImageSpec defines the desired state of an Image resource.
-type ImageSpec struct {
+const KindLinuxKit = "LinuxKit"
+
+// LinuxKitSpec defines the desired state of an LinuxKit resource.
+type LinuxKitSpec struct {
 	// Builder specifies the parameters for the main container configuration.
 	// +optional
 	Builder Container `json:"builder,omitempty"`
@@ -142,8 +144,8 @@ type GitRepository struct {
 	Credentials *corev1.LocalObjectReference `json:"credentials,omitempty"`
 }
 
-// ImageStatus defines the observed state of an Image resource.
-type ImageStatus struct {
+// LinuxKitStatus defines the observed state of an Image resource.
+type LinuxKitStatus struct {
 	// Ready indicates whether the image has been successfully built.
 	// +optional
 	Ready bool `json:"ready"`
@@ -169,28 +171,25 @@ type Container struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:storageversion
-// +kubebuilder:deprecatedversion:warning="image-builder.anza-labs.dev/v1alpha2 Image is deprecated, and will be removed in upcoming releases."
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready"
 
-// Image represents the schema for the images API.
-type Image struct {
+// LinuxKit is the Schema for the linuxkits API.
+type LinuxKit struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ImageSpec   `json:"spec,omitempty"`
-	Status ImageStatus `json:"status,omitempty"`
+	Spec   LinuxKitSpec   `json:"spec,omitempty"`
+	Status LinuxKitStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// ImageList contains a list of Image resources.
-type ImageList struct {
+// LinuxKitList contains a list of LinuxKit.
+type LinuxKitList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Image `json:"items"`
+	Items           []LinuxKit `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Image{}, &ImageList{})
+	SchemeBuilder.Register(&LinuxKit{}, &LinuxKitList{})
 }

@@ -21,7 +21,7 @@ import (
 
 	"github.com/distribution/reference"
 
-	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
+	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2" //nolint:staticcheck // deprecation only for users
 
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package image
 
 import (
 	"crypto/sha256"
@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
+	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2" //nolint:staticcheck // deprecation only for users
 	"github.com/anza-labs/image-builder/internal/fetcherconfig"
 	"github.com/anza-labs/image-builder/internal/naming"
 	"github.com/anza-labs/image-builder/version"

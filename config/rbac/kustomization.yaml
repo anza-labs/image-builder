@@ -25,3 +25,13 @@ resources:
 - image_editor_role.yaml
 - image_viewer_role.yaml
 
+# For each CRD, "Admin", "Editor" and "Viewer" roles are scaffolded by
+# default, aiding admins in cluster management. Those roles are
+# not used by the {{ .ProjectName }} itself. You can comment the following lines
+# if you do not want those helpers be installed with your Project.
+- mkosi_admin_role.yaml
+- mkosi_editor_role.yaml
+- mkosi_viewer_role.yaml
+- linuxkit_admin_role.yaml
+- linuxkit_editor_role.yaml
+- linuxkit_viewer_role.yaml

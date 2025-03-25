@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: minimal
+  labels:
+    area: 'minimal'
+spec:
+  concurrent: false
+  timeouts:
+    apply: 5s
+    assert: 30s
+    cleanup: 30s
+    delete: 15s
+    error: 30s
+  steps:
+    - name: Check if controller-manager exist
+      try:
+        - assert:
+            resource:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: image-builder-controller-manager
+                namespace: image-builder-system
+              status:
+                availableReplicas: 1
+        - apply:
+            file: ../../../config/s3/secret.yaml
+
+    - name: Create image with base configuration options
+      try:
+        - create:
+            file: ./apply-image.yaml
+
+    - name: Wait for Image status to be ready and resources to be deployed
+      try:
+        - assert:
+            timeout: 10m
+            resource:
+              apiVersion: batch/v1
+              kind: Job
+              metadata:
+                name: test-image
+        - wait:
+            timeout: 10m
+            apiVersion: batch/v1
+            kind: Job
+            name: test-image
+            for:
+              condition:
+                name: complete
+        - assert:
+            file: ./assert-image.yaml

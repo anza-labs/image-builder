@@ -1,0 +1,29 @@
+# This rule is not used by the project image-builder itself.
+# It is provided to allow the cluster admin to help manage permissions for users.
+#
+# Grants read-only access to image-builder.anza-labs.dev resources.
+# This role is intended for users who need visibility into these resources
+# without permissions to modify them. It is ideal for monitoring purposes and limited-access viewing.
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: image-builder
+    app.kubernetes.io/managed-by: kustomize
+  name: mkosi-viewer-role
+rules:
+- apiGroups:
+  - image-builder.anza-labs.dev
+  resources:
+  - mkosis
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - image-builder.anza-labs.dev
+  resources:
+  - mkosis/status
+  verbs:
+  - get

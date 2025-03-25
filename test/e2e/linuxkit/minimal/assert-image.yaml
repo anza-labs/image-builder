@@ -1,0 +1,7 @@
+---
+apiVersion: image-builder.anza-labs.dev/v1beta1
+kind: LinuxKit
+metadata:
+  name: test-image
+status:
+  ready: true

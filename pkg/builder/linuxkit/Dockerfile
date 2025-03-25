@@ -5,7 +5,10 @@ FROM --platform=$BUILDPLATFORM docker.io/tonistiigi/xx:1.6.1 AS xx
 # Build the linuxkit binary
 FROM docker.io/library/golang:1.24 AS linuxkit
 ENV CGO_ENABLED=0
-RUN go install github.com/linuxkit/linuxkit/src/cmd/linuxkit@v0.0.0-20241001125717-ad95c6fc2e48
+
+# renovate: datasource=go depName=github.com/linuxkit/linuxkit
+ARG VERSION=v0.0.0-20241001125717-ad95c6fc2e48
+RUN go install github.com/linuxkit/linuxkit/src/cmd/linuxkit@${LINXUKIT_VERSION}
 
 # Build the manager binary
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.24 AS builder
