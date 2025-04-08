@@ -9,7 +9,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.6.2
 	github.com/go-git/go-git/v5 v5.14.0
 	github.com/go-logr/logr v1.4.2
-	github.com/minio/minio-go/v7 v7.0.89
+	github.com/minio/minio-go/v7 v7.0.90
 	github.com/stretchr/testify v1.10.0
 	k8s.io/api v0.32.3
 	k8s.io/apimachinery v0.32.3
@@ -100,7 +100,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/exp v0.0.0-20241004190924-225e2abe05e6 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
