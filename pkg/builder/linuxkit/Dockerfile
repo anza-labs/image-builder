@@ -7,7 +7,7 @@ FROM docker.io/library/golang:1.24 AS linuxkit
 ENV CGO_ENABLED=0
 
 # renovate: datasource=go depName=github.com/linuxkit/linuxkit/src/cmd/linuxkit versioning=loose
-ARG VERSION=v0.0.0-20250409145320-7a129b6e8d3e
+ARG VERSION=v0.0.0-20250502105637-89a95f958ea0
 RUN go install github.com/linuxkit/linuxkit/src/cmd/linuxkit@${VERSION}
 
 # Build the manager binary
