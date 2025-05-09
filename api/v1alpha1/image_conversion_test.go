@@ -20,7 +20,7 @@ import (
 	"github.com/distribution/reference"
 	"github.com/stretchr/testify/assert"
 
-	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
+	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2" //nolint:staticcheck // deprecation only for users
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"

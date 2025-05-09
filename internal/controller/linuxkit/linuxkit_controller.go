@@ -1,4 +1,4 @@
-// Copyright 2024 anza-labs contributors.
+// Copyright 2025 anza-labs contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package linuxkit
 
 import (
 	"context"
 	"fmt"
 
-	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
+	imagebuilderv1beta1 "github.com/anza-labs/image-builder/api/v1beta1"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -37,16 +37,16 @@ const (
 	imageFinalizer = "image-builder.anza-labs.dev/finalizer"
 )
 
-// ImageReconciler reconciles a Image object.
-type ImageReconciler struct {
+// LinuxKitReconciler reconciles a Image object.
+type LinuxKitReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
 
 //nolint:lll // kubebuilder directives can exceed length limit
-// +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=images,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=images/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=images/finalizers,verbs=update
+// +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=linuxkits,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=linuxkits/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=image-builder.anza-labs.dev,resources=linuxkits/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=core,resources=secrets/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=core,resources=secrets/finalizers,verbs=update
@@ -68,18 +68,18 @@ type ImageReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *LinuxKitReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
 	log.V(3).Info("Fetching Image object")
-	image := &imagebuilderv1alpha2.Image{}
+	image := &imagebuilderv1beta1.LinuxKit{}
 	if err := r.Get(ctx, req.NamespacedName, image); err != nil {
 		log.V(0).Error(err, "Failed to fetch Image object")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// Handle finalizer logic
-	if image.ObjectMeta.DeletionTimestamp.IsZero() {
+	if image.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(image, imageFinalizer) {
 			log.V(3).Info("Adding finalizer")
 			controllerutil.AddFinalizer(image, imageFinalizer)
@@ -150,7 +150,7 @@ func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 }
 
 // ensureResource ensures that a resource is created or updated.
-func (r *ImageReconciler) ensureResources(ctx context.Context, owner client.Object, objs ...client.Object) error {
+func (r *LinuxKitReconciler) ensureResources(ctx context.Context, owner client.Object, objs ...client.Object) error {
 	log := log.FromContext(ctx, "owner", klog.KObj(owner))
 
 	for _, resource := range objs {
@@ -170,7 +170,7 @@ func (r *ImageReconciler) ensureResources(ctx context.Context, owner client.Obje
 }
 
 // cleanupResources removes resources owned by the Image.
-func (r *ImageReconciler) cleanupResources(ctx context.Context, image *imagebuilderv1alpha2.Image) error {
+func (r *LinuxKitReconciler) cleanupResources(ctx context.Context, image *imagebuilderv1beta1.LinuxKit) error {
 	log := log.FromContext(ctx, "image", klog.KRef(image.Namespace, image.Name))
 	log.V(3).Info("Cleaning up resources")
 
@@ -217,9 +217,10 @@ func (r *ImageReconciler) cleanupResources(ctx context.Context, image *imagebuil
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *LinuxKitReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&imagebuilderv1alpha2.Image{}).
+		For(&imagebuilderv1beta1.LinuxKit{}).
+		Named("linuxkit").
 		Owns(&batchv1.Job{}).
 		Owns(&corev1.ConfigMap{}).
 		Owns(&corev1.Secret{}).

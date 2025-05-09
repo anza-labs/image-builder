@@ -28,4 +28,22 @@ resources:
   webhooks:
     conversion: true
     webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: anza-labs.dev
+  group: image-builder
+  kind: LinuxKit
+  path: github.com/anza-labs/image-builder/api/v1beta1
+  version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: anza-labs.dev
+  group: image-builder
+  kind: Mkosi
+  path: github.com/anza-labs/image-builder/api/v1beta1
+  version: v1beta1
 version: "3"

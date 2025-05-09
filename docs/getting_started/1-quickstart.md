@@ -23,8 +23,8 @@ The following example demonstrates how to create a minimal image specification u
 ### Example Configuration (S3)
 
 ```yaml
-apiVersion: image-builder.anza-labs.dev/v1alpha2
-kind: Image
+apiVersion: image-builder.anza-labs.dev/v1beta1
+kind: LinuxKit
 metadata:
   name: minimal
 spec:
@@ -61,7 +61,7 @@ kubectl apply -f minimal-image.yaml
 Once applied, you can verify the status and access the generated secrets as follows:
 
 ```
-$ kubectl get images.image-builder.anza-labs.dev minimal
+$ kubectl get linuxkits.image-builder.anza-labs.dev minimal
 NAME      READY
 minimal   true
 ```

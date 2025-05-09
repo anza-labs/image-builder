@@ -1,4 +1,4 @@
-// Copyright 2024 anza-labs contributors.
+// Copyright 2025 anza-labs contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package v1alpha2 contains API Schema definitions for the image-builder v1alpha2 API group
-//
-// Deprecated: Due to breaking changes, v1beta1 is a new default, and this version will be removed in upcoming releases.
-//
+// Package v1beta1 contains API Schema definitions for the image-builder v1beta1 API group.
 // +kubebuilder:object:generate=true
 // +groupName=image-builder.anza-labs.dev
-package v1alpha2
+package v1beta1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -27,7 +24,7 @@ import (
 
 var (
 	// GroupVersion is group version used to register these objects.
-	GroupVersion = schema.GroupVersion{Group: "image-builder.anza-labs.dev", Version: "v1alpha2"}
+	GroupVersion = schema.GroupVersion{Group: "image-builder.anza-labs.dev", Version: "v1beta1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

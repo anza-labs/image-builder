@@ -20,8 +20,11 @@ import (
 	"os"
 
 	imagebuilderv1alpha1 "github.com/anza-labs/image-builder/api/v1alpha1" //nolint:staticcheck // deprecation only for users
-	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2"
-	"github.com/anza-labs/image-builder/internal/controller"
+	imagebuilderv1alpha2 "github.com/anza-labs/image-builder/api/v1alpha2" //nolint:staticcheck // deprecation only for users
+	imagebuilderv1beta1 "github.com/anza-labs/image-builder/api/v1beta1"
+	"github.com/anza-labs/image-builder/internal/controller/image"
+	"github.com/anza-labs/image-builder/internal/controller/linuxkit"
+	"github.com/anza-labs/image-builder/internal/controller/mkosi"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -48,6 +51,7 @@ func init() {
 
 	utilruntime.Must(imagebuilderv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(imagebuilderv1alpha2.AddToScheme(scheme))
+	utilruntime.Must(imagebuilderv1beta1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -140,7 +144,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.ImageReconciler{
+	if err = (&image.ImageReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
@@ -152,6 +156,20 @@ func main() {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Image")
 			os.Exit(1)
 		}
+	}
+	if err = (&linuxkit.LinuxKitReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "LinuxKit")
+		os.Exit(1)
+	}
+	if err = (&mkosi.MkosiReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Mkosi")
+		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
 

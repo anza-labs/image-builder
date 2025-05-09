@@ -3,6 +3,8 @@
 # It should be run by config/default
 resources:
 - bases/image-builder.anza-labs.dev_images.yaml
+- bases/image-builder.anza-labs.dev_linuxkits.yaml
+- bases/image-builder.anza-labs.dev_mkosis.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

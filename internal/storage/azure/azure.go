@@ -58,7 +58,7 @@ func (c *Client) Stat(ctx context.Context, blobName string) (bool, error) {
 			return false, fmt.Errorf("unable to fetch next page of results: %w", err)
 		}
 
-		segment := page.ListBlobsFlatSegmentResponse.Segment
+		segment := page.Segment
 		if segment == nil {
 			return false, fmt.Errorf("segment is missing")
 		}
